@@ -31,6 +31,7 @@ int main(int argc, char *argv[])
         }
 
 }
+//char *fgets(char *str, int n, FILE *stream)
 
 	printf("%s\n", argv);
 
