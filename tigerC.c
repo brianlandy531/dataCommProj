@@ -80,48 +80,11 @@ int getTokens( char *inbuff, struct tokenInputs *outToks)
         //strncpy([argCount], token, STR_MAX_LEN);
     } 
 
-
-    //printf("Here1\n");
-
-   /* for(int x=0; x<MAX_ARGS; x++)
-    {
-        printf("[%d]: ", x+1);
-        printf("%s\n", tokStruct->inArg[x]);
-    }
-*/
-    //printf("Here1\n");
-
-
-        //Chose operating mode (connect, get put)
-
-    //printf("Here1\n");
-
-  /*  for(int x=0; x<MAX_ARGS; x++)
-    {
-        printf("[%d]: ", x+1);
-        printf("%s\n", tokStruct->inArg[x]);
-    }
-*/
-    //printf("Here1\n");
-
-
     memcpy(outToks, tokStruct, sizeof(struct tokenInputs));
     clearToks(tokStruct);
-
-    /*for(int x=0; x<MAX_ARGS; x++)
-        {
-            printf("[%d]: ", x+1);
-            printf("%s\n", tokStruct->inArg[x]);
-        }
-*/
-    //printf("Here1\n");
-
-
     free(tokStruct);
 
     return 0; 
-
-
 }
 
 
@@ -137,28 +100,22 @@ int main(int argc, char *argv[])
 
     struct  tokenInputs* currTok;
 
-
-    //printf("Here\n");
-
     currTok = malloc(sizeof( struct tokenInputs));
     
-    //printf("Here\n");
+    tconnect = 0;
 
     while(fgets(inbuff, STR_MAX_LEN , stdin) != NULL)
     {
         getTokens(inbuff, currTok);
      
-        /*for(int x=0; x<MAX_ARGS; x++)
-        {
-            printf("[%d]: ", x+1);
-            printf("%s\n", currTok->inArg[x]);
-        }*/
-
         if (strcmp( "tconnect", currTok->inArg[0]) ==0 )
         {
 
                 // do something
                 printf("tconnecting\n");
+                //Server connect logic
+                tconnect =1;
+                
                 
         }
         else if (strcmp( "tget", currTok->inArg[0]) ==0)
@@ -166,6 +123,12 @@ int main(int argc, char *argv[])
               
                 // do something
                 printf("tgetting\n");
+
+                //file request logic
+                if(tconnect)
+                {
+                    
+                }
                 
         }
         else if (strcmp( "tput", currTok->inArg[0]) ==0)
@@ -173,6 +136,12 @@ int main(int argc, char *argv[])
 
                 // do something
                 printf("tputting\n");
+
+                //file transfer logic
+                if(tconnect)
+                {
+
+                }
                 
         }
         else
