@@ -7,6 +7,7 @@
 #include <sys/socket.h> 
 #include <sys/types.h>
 
+
 #define STR_MAX_LEN 256
 #define MAX_ARGS 5
 #define SADDR_STRUCT struct sockaddr 
@@ -44,6 +45,7 @@ int getTokens( char *inbuff, struct tokenInputs *outToks)
 
 
     struct tokenInputs* tokStruct;
+
 
     if(tokStruct)
     {
@@ -92,6 +94,18 @@ int getTokens( char *inbuff, struct tokenInputs *outToks)
 int main(int argc, char *argv[])
 {
 
+    int sockfileDesc = -1;
+    int connectionFileDesc = -1;
+    int mesLen=0;
+    struct sockaddr_in Server_info;
+    struct sockaddr_in client_info; 
+    SADDR_STRUCT sadd_serv;
+
+    char messageToSend[STR_MAX_LEN];
+    char messageToRecv[STR_MAX_LEN];
+
+
+
 	char inbuff[STR_MAX_LEN] = "";
 
     printf("Program name %s\n", argv[0]);
@@ -102,7 +116,7 @@ int main(int argc, char *argv[])
 
     currTok = malloc(sizeof( struct tokenInputs));
     
-    tconnect = 0;
+    int tconnect = 0;
 
     while(fgets(inbuff, STR_MAX_LEN , stdin) != NULL)
     {
@@ -115,7 +129,44 @@ int main(int argc, char *argv[])
                 printf("tconnecting\n");
                 //Server connect logic
                 tconnect =1;
-                
+
+                sockfileDesc = socket(AF_INET, SOCK_STREAM, 0); 
+
+                if(sockfileDesc ==-1)
+                {
+                    printf("Try again, socket not created\n");
+
+                }
+                else
+                {
+
+                    memset(&Server_info, 0, sizeof(Server_info));
+
+                    Server_info.sin_family = AF_INET;
+                    //Provide string with saddr
+                    Server_info.sin_addr.s_addr=inet_addr(currTok->inArg[1]);
+                    Server_info.sin_port= htons(TEST_PORT);
+
+                    //sadd_serv = (SADDR_STRUCT) Server_info;
+
+                    int retval = connect(sockfileDesc, (SADDR_STRUCT*)&Server_info, sizeof(Server_info));
+
+                    if(retval==0)
+                    {
+                        //do client stuff
+                        printf("Ready to do server lcient stuff\n");
+
+                        //Pass connection off to sub client through threads
+
+                    }
+                    else
+                    {
+                        printf("Failed to connect\n");
+                    }
+
+                }
+
+
                 
         }
         else if (strcmp( "tget", currTok->inArg[0]) ==0)
@@ -140,6 +191,53 @@ int main(int argc, char *argv[])
                 //file transfer logic
                 if(tconnect)
                 {
+
+                }
+                
+        }
+        else if (strcmp( "testwrite", currTok->inArg[0]) ==0)
+        {
+
+                // do something
+                printf("testwrite\n");
+
+                //file transfer logic
+                if(tconnect)
+                {
+//                    write();
+                }
+                
+        }
+        else if (strcmp( "testread", currTok->inArg[0]) ==0)
+        {
+
+                // do something
+                printf("testread\n");
+
+                //file transfer logic
+                if(tconnect)
+                {
+//                    read();
+                }
+                
+        }
+        else if (strcmp( "exit", currTok->inArg[0]) ==0)
+        {
+
+                // do something
+
+                //file transfer logic
+                if(tconnect)
+                {
+                    tconnect = 0;
+                    close(sockfileDesc);
+                    printf("closing\n");
+
+//                    read();
+                }
+                else
+                {
+                    printf("Nothing to close\n");
 
                 }
                 

@@ -8,7 +8,8 @@
 #define MAX 80 
 #define PORT 8080 
 #define SA struct sockaddr 
-  
+  #define STAT_SERVER_ADDRESS "127.0.0.1"
+
 // Function designed for chat between client and server. 
 void func(int sockfd) 
 { 
@@ -57,7 +58,7 @@ int main()
   
     // assign IP, PORT 
     servaddr.sin_family = AF_INET; 
-    servaddr.sin_addr.s_addr = htonl(INADDR_ANY); 
+    servaddr.sin_addr.s_addr = inet_addr(STAT_SERVER_ADDRESS);//htonl(INADDR_ANY); 
     servaddr.sin_port = htons(PORT); 
   
     // Binding newly created socket to given IP and verification 

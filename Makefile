@@ -4,14 +4,14 @@ makeExampleServer: serverCopy.c
 makeExampleClient: 	clientCopy.c
 	gcc -o client clientCopy.c
 
-makeMyCLS:
+exampleCLS:
 	gcc -o client myclient.c
 	gcc -o server myserver.c
 
-makeTigerS:
+tigerS: tigerS.c
 	gcc -o tigerS tigerS.c
 
-makeTigerC:
+tigerC: tigerC.c
 	gcc -o tigerC tigerC.c
 
 threads:
