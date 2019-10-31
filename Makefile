@@ -9,10 +9,10 @@ exampleCLS:
 	gcc -o server myserver.c
 
 tigerS: tigerS.c
-	gcc -o tigerS tigerS.c
+	gcc -g -o tigerS tigerS.c
 
 tigerC: tigerC.c
-	gcc -o tigerC tigerC.c
+	gcc -g -o tigerC tigerC.c
 
 threads:
 	gcc -pthread -o bin pthreadExample.c
