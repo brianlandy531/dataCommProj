@@ -155,6 +155,7 @@ int readMessageBin(int socket, int* buffer)
 }
 
 
+
 int authorizeUser(char* user)
 {
 
@@ -205,6 +206,9 @@ int runRespondProc(pid_t procNum, int line)
 
 	int error = 0;
 
+	int binBuffs = 0;
+	int lastBuf=-1;
+
 	while(on)
 	{
 
@@ -236,19 +240,35 @@ int runRespondProc(pid_t procNum, int line)
 	        	if(fileptr)
 	        	{
 					//whilenot file close
+					//get params
+	        		error =	readMessage(line, messageToRecv);
 
-					error =	readMessage(line, buf);
+					char delims[] = ":\n";
 
-					while(strcmp( "last_line", buf) !=0) 
+					char* token = strtok(messageToRecv, delims); 
+
+					lastBuf = atoi(token);
+
+					token = strtok(NULL, delims); 
+
+					binBuffs = atoi(token);
+
+
+					fprintf(stdout, "%d and %d\n", binBuffs, lastBuf);
+
+					
+
+	        		//while big buffs
+
+
+
+					for(int x = 0; x<binBuffs; x++)
 	                {
-	                	
+	                	//read and do a buff write
 
-
-	                	fwrite(buf, sizeof(int), STR_MAX_LEN, fileptr);
-	                	error =	readMessage(line, buf);
-	                	//sendMessage(line, "accepted");
-	                	
-	                	fprintf(stdout,"LoopLine\n");
+	                	error =	readMessageBin(line, fgetCRes);
+	                	fwrite(fgetCRes, sizeof(int), STR_MAX_LEN, fileptr);
+	                	fprintf(stdout, "Line recieved\n");
 
 		        		if(error==-1)
 						{
@@ -256,39 +276,20 @@ int runRespondProc(pid_t procNum, int line)
 							on = 0;
 						}
 	                }
-	                //
-	                error =	readMessage(line, buf);
 
-	                fprintf(stdout,"Hereserver\n");
+	                printf("Out of loop\n");
+	                
+	                error =	readMessageBin(line, fgetCRes);
+
+	                fwrite(fgetCRes, sizeof(int), lastBuf, fileptr);
+
+                    fprintf(stdout,"Hereserver1\n");
 
 
-	                int lastBuf = atoi(buf);
-
-	                fprintf(stdout, "Last buf is %d\n", lastBuf);
-
-
-	                error =	readMessage(line, buf);
-
-	                fprintf(stdout, "%s\n", buf);
-
-                        fprintf(stdout,"Hereserver\n");
-
-	                fwrite(buf, sizeof(char), lastBuf, fileptr);
-
-					//fflush(fileptr); 
-
-	FILE* filelast =  fopen("lastbit.txt", "wb");
-
-					fwrite(buf, sizeof(char), lastBuf, filelast);
-
-					fflush(filelast);
-
-					close(filelast);
-
-                        fprintf(stdout,"Hereserver1\n");
 
 	                fclose(fileptr);
 					//send done ack
+
 	                strcpy(messageToSend, "all_done");
 
 

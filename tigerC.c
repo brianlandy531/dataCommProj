@@ -406,7 +406,7 @@ int main(int argc, char *argv[])
                int buff[STR_MAX_LEN];
 
                 char buffer[STR_MAX_LEN];
-
+                int bufferSendCount = 0;
                 //file transfer logic
                 if(tconnect)
                 {
@@ -432,44 +432,62 @@ int main(int argc, char *argv[])
                                 cur = cur +1;
                                 if(cur == STR_MAX_LEN)
                                 {
-                                    for(int j=0; j<STR_MAX_LEN; j++)
-                                    {
-                                         messageToSend[j] = buff[j];
-                                        //send message
-                                    }
-                                       sendMessage(sockSeperateFileDesc, messageToSend);
+
+                                    bufferSendCount++;
                                     cur=0;
-                                    printf("Limit reached, sending\n");
+                                    //printf("Limit reached, sending\n");
                                 }
                         }
 
-
-                        //allert last line
-                        strcpy(messageToSend, "last_line");
-                        //fprintf(stdout, "%s\n", messageToSend);
-                        sendMessage(sockSeperateFileDesc, messageToSend);
-
+                        
+                        
+                        
                         //send last line size
-                        sprintf(messageToSend, "%d\n", cur);
+                        sprintf(messageToSend, "%d:%d:", cur, bufferSendCount);
+                        
+
+                        fprintf(stdout,messageToSend);
+
                         sendMessage(sockSeperateFileDesc, messageToSend);
+
+                        fflush(fileptr);
+                        rewind(fileptr);
+                        fclose(fileptr); 
+                        fflush(fileptr);
+                        fileptr = fopen(currTok->inArg[1], "rb");
+                        rewind(fileptr);
+
+                        while((c=fgetc(fileptr))!=EOF)
+                        {
+                                buff[cur] = c;
+                                cur = cur +1;
+                                if(cur == STR_MAX_LEN)
+                                {
+                                    for(int j=0; j<STR_MAX_LEN; j++)
+                                    {
+                                         messageToSendBin[j] = buff[j];
+                                        //send message
+                                    }
+                                    printf("sending\n\n");
+                                       sendMessageBin(sockSeperateFileDesc, messageToSendBin);
+                                    cur=0;
+                                    //printf("Limit reached, sending\n");
+                                }
+                        }
 
                         for(int j=0; j<cur; j++)
                         {
-                             messageToSend[j] = buff[j];
-                                    
+                             messageToSendBin[j] = buff[j];
                         }
 
                         //send last line
-                        sendMessage(sockSeperateFileDesc, messageToSend);
-
-                        printf("Here1\n");
-                        memset(buffer, '0', STR_MAX_LEN);
-
-
+                        sendMessageBin(sockSeperateFileDesc, messageToSendBin);
                         
+                        printf("here client\n\n");
+
                         //send close directive
-                        strcpy(messageToSend, "close_file");
-                        sendMessage(sockSeperateFileDesc, messageToSend);
+                        //strcpy(messageToSend, "close_file");
+                        //sendMessage(sockSeperateFileDesc, messageToSend);
                     
                         //acknowledge closing
                         printf("Here2\n");
