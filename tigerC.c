@@ -20,6 +20,9 @@
 char messageToSend[STR_MAX_LEN];
     char messageToRecv[STR_MAX_LEN];
 
+int messageToSendBin[STR_MAX_LEN];
+    int messageToRecvBin[STR_MAX_LEN];
+
 struct tokenInputs
 {
     int argCount;
@@ -175,6 +178,13 @@ int sendMessage(int socket, char* buffer)
 
 }
 
+int sendMessageBin(int socket, int* buffer)
+{
+    int res = write(socket, buffer, sizeof(int)*STR_MAX_LEN); 
+    bzero(buffer, sizeof(int)*STR_MAX_LEN);
+    return res;
+
+}
 
 
 int main(int argc, char *argv[])
@@ -346,18 +356,6 @@ int main(int argc, char *argv[])
                                             strcpy(messageToSend,"Still awake?!!!\n");
                                             sendMessage(sockSeperateFileDesc, messageToSend);
 
-                                        //     if(first==0)
-                                        //     {
-                                        //         first =1; 
-                                        //         shutdown(sockfileDesc,SHUT_RDWR);
-                                        //         close(sockfileDesc);
-                                        //     }
-
-
-                                        // }
-
-
-
                                         shutdown(sockfileDesc,SHUT_RDWR);
                                         close(sockfileDesc);
                                     }
@@ -441,12 +439,17 @@ int main(int argc, char *argv[])
                                     }
                                        sendMessage(sockSeperateFileDesc, messageToSend);
                                     cur=0;
+                                    printf("Limit reached, sending\n");
                                 }
                         }
 
+
+                        //allert last line
                         strcpy(messageToSend, "last_line");
+                        //fprintf(stdout, "%s\n", messageToSend);
                         sendMessage(sockSeperateFileDesc, messageToSend);
 
+                        //send last line size
                         sprintf(messageToSend, "%d\n", cur);
                         sendMessage(sockSeperateFileDesc, messageToSend);
 
@@ -455,22 +458,27 @@ int main(int argc, char *argv[])
                              messageToSend[j] = buff[j];
                                     
                         }
-                            sendMessage(sockSeperateFileDesc, messageToSend);
 
-                            memset(buffer, '0', STR_MAX_LEN);
+                        //send last line
+                        sendMessage(sockSeperateFileDesc, messageToSend);
+
+                        printf("Here1\n");
+                        memset(buffer, '0', STR_MAX_LEN);
 
 
                         
-
+                        //send close directive
                         strcpy(messageToSend, "close_file");
                         sendMessage(sockSeperateFileDesc, messageToSend);
                     
-                        
+                        //acknowledge closing
+                        printf("Here2\n");
                         readMessage(sockSeperateFileDesc, messageToRecv);
 
 
+                        printf("Here3\n");
 
-
+                        //check closing
                         if (strcmp( "all_done", messageToRecv) ==0 )
                         {
                             printf("Transferred succesfully please input a new command\n");
