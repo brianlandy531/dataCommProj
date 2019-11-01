@@ -1,7 +1,9 @@
 #include <stdlib.h> 
 #include <string.h> 
 #include <stdio.h> 
-
+#include <stdio.h> 
+#include <sys/types.h> 
+#include <unistd.h> 
 #include <netdb.h> 
 #include <netinet/in.h> 
 #include <sys/socket.h> 
@@ -68,9 +70,10 @@ int readMessageBlock(int socket, char* buffer)
         read(socket, buffer, STR_MAX_LEN);
         if(strcmp(buffer, start)!=0)
         {
-            printf("%s\n", buffer);
-            break;
+            fprintf(stdout, "%s\n", buffer);
+            
             return 0;
+            break;
         }
 
     }
@@ -110,12 +113,13 @@ int readMessage(int socket, char* buffer)
         
         int result = read(socket, buffer, STR_MAX_LEN);
         
-		printf("%d", result);
+		//result(stdout, "%d", result);
         if(strcmp(buffer, start)!=0)
         {
-            printf("read success: %s\n", buffer);
-            break;
+            fprintf(stdout, "read success: %s\n", buffer);
+            
             return 0;
+ 			break;
         }
 
     }
@@ -139,7 +143,7 @@ int authorizeUser(char* user)
 
 	while(fgets(buffer, 255, (FILE*) fileptr)) 
 	{
-    printf("%s\n", buffer);
+    fprintf(stdout, "%s\n", buffer);
     
     buffer[strcspn(buffer, "\n")] = 0;
     if(strcmp(buffer, user)==0)
@@ -157,6 +161,101 @@ int authorizeUser(char* user)
 }
 
 
+//Logic for get file put file and close and stuff
+int runRespondProc(pid_t procNum, int line)
+{
+
+	char buf[STR_MAX_LEN] = "";
+	char name[STR_MAX_LEN] = "";
+
+	FILE* fileptr = NULL;
+
+	int on =1;
+
+	int error = 0;
+
+	while(on)
+	{
+
+		error =	readMessageBlock(line, buf);
+		//Read messages
+		if(error==-1)
+		{
+			fprintf(stdout, "Error in process\n");
+			on = 0;
+
+		}
+		else
+		{
+			if (strcmp( "tputStart", buf) ==0 )
+	        {
+	        	
+	        	//record filename
+	        	error =	readMessage(line, name);
+	        	if(error==-1)
+				{
+				fprintf(stdout, "Error in process\n");
+					on = 0;
+
+				}
+
+				strcat(name, "copied.txt");
+
+	        	fileptr = fopen(name,"w");
+	        	if(fileptr)
+	        	{
+					//whilenot file close
+					while(strcmp( "close_file", buf) ==0) 
+	                {
+	                	
+
+	                	error =	readMessage(line, buf);
+	                	fprintf(fileptr, "%s", buf);
+		        		
+
+
+		        		if(error==-1)
+						{
+							fprintf(stdout, "Error in process\n");
+							on = 0;
+						}
+
+
+	                }
+
+					fflush(fileptr); 
+
+	                fclose(fileptr);
+					//send done ack
+	                strcpy(messageToSend, "all_done");
+                    sendMessage(line, messageToSend);
+
+
+				}
+
+			}
+			else if (strcmp( "tgetStart", buf) ==0 )
+	        {
+	        	//Respond to put
+
+				//Respond to Get
+
+				//Respond to exit
+			}
+
+		}
+
+
+		
+
+	}
+	//sleep(30);
+	//printf("PID: %d", procNum);
+	printf("process Died due to connection error");
+
+}
+
+
 int main()
 {
 	int reassignPort = 0;
@@ -170,14 +269,18 @@ int main()
 
     struct serverActivity serverUsage;
     
+    while(1)
+    {
+
 
     sockfileDesc = socket(AF_INET, SOCK_STREAM, 0); 
 	
-    printf("Started\n");
+    fprintf(stdout, "Started\n");
 
     if(sockfileDesc ==-1)
     {
-        printf("Try again, socket not created\n");
+    	sleep(15);
+        fprintf(stdout, "Try again, socket not created\n");
 
     }
     else
@@ -187,39 +290,30 @@ int main()
     	Server_info.sin_family = AF_INET;
         //Provide string with saddr
         Server_info.sin_addr.s_addr=inet_addr(STAT_SERVER_ADDRESS);
-        Server_info.sin_port= htons(TEST_PORT);
+        Server_info.sin_port= htons(TEST_PORT+numClients);
 
        	//bind
         int bindret = bind(sockfileDesc, (SADDR_STRUCT*) &(Server_info), sizeof(Server_info));
 
         if(bindret==0)
         {
-        	printf("bound properly\n");
-        	printf("%d bind ret\n", bindret);
-
-
+        	fprintf(stdout, "bound properly\n");
+        	//fprintf(stdout, "%d bind ret\n", bindret);
        		//listen
-
         	int listenret = listen(sockfileDesc, MAX_BACK_LOG);
-
-       		
-
 	        if(listenret==0)
 	        {
 	        	//accept
 	        	int lengthaddr = sizeof(client_info); 
+
+	        	printf("Waiting for connection on: %d \n", TEST_PORT+numClients);
+
 	        	connectionFileDesc = accept(sockfileDesc, (SADDR_STRUCT*)&client_info, &lengthaddr);
-
-
-
-	        	numClients++;
-
-
+	        	//numClients++;
 	        	//need to authenticate or close connection
-
        			//do
 	        	//Branch to a child thread passing in this FD and child information about the connect
-	        	printf("connect succesfully to client number%d\n", numClients);
+	        	fprintf(stdout, "connect succesfully to client number%d\n", numClients);
 
 	        	//so stuff here
 
@@ -228,20 +322,20 @@ int main()
 
 	        	//int valid = authenticate_user()
 
-	        	sleep(1);
+	        	//----sleep(1);
 	        	strcpy(messageToSend, "auth");
 	        	
-	        	//printf("%s\n", messageToSend);
+	        	//fprintf(stdout, "%s\n", messageToSend);
 	        	
 				strcpy(messageToSend, "auth");
 	        	int resultnum =sendMessage(connectionFileDesc,messageToSend);
-	        	//printf("%d", resultnum);
+	        	//fprintf(stdout, "%d", resultnum);
 
 
 
 	        	readMessage(connectionFileDesc, messageToRecv);
 
-	        	printf("%s\n", messageToRecv);
+	        	fprintf(stdout, "%s\n", messageToRecv);
 
 	        	int allowedIn =authorizeUser(messageToRecv);
 
@@ -250,7 +344,7 @@ int main()
 
 	        		//////////////////////////////////////////////////////////////////////
 	        		//spawn child/swap to other port
-	        		printf("ALLOWED ACCESS\n");
+	        		fprintf(stdout, "ALLOWED ACCESS\n");
 
 	        		//break socket out
 
@@ -276,20 +370,53 @@ int main()
 		       	 		{
 		        			//accept
 
-		       	 			printf("\nGot past listening\n\n");
+		       	 			fprintf(stdout, "\nGot past listening\n\n");
 
 		        			int lengthaddr = sizeof(client_info); 
 		        			connectionFileDescNew = accept(sockfileDescNew, (SADDR_STRUCT*)&client_info, &lengthaddr);
 		        		
 //		        			sleep(1);
-		        				resultnum = readMessage(connectionFileDescNew, messageToRecv);
-                                printf("%s\n", messageToRecv);
+		        				
+		        			pid_t procNum = fork();
+
+		        			if(procNum == 0)
+		        			{
+
+		        				//Child 
+                	        	shutdown(connectionFileDesc, SHUT_RDWR); 
+        						close(connectionFileDesc);
+    							shutdown(sockfileDesc, SHUT_RDWR);
+   	    	 					close(sockfileDesc);		        
+	        					
+
+		        				while(1)
+		        				{
+		        				
+
+		        				//resultnum = readMessage(connectionFileDescNew, messageToRecv);
+                                //fprintf(stdout, "%s\n", messageToRecv);
+
+                                	fprintf(stdout, "Client number %d on port%d\n", numClients,reassignPort);
+
+									runRespondProc(procNum, connectionFileDescNew);									
+
+		        				}
 
 
+		        			}
+		        			else
+		        			{
+		        				fprintf(stdout, "Continuing in parent\n");
+		        				numClients++;
 
-				        	close(sockfileDesc);
+		        			}
+
+
+				        	
 	    	    			shutdown(connectionFileDesc, SHUT_RDWR); 
 		        			close(connectionFileDesc);
+	        				shutdown(sockfileDesc, SHUT_RDWR);
+		        			close(sockfileDesc);
 
 
 
@@ -304,7 +431,7 @@ int main()
 	        	}
 	        	else{
 
-	        		printf("closing\n");
+	        		fprintf(stdout, "closing\n");
 
 	        		shutdown(sockfileDesc, SHUT_RDWR); 
 
@@ -315,26 +442,26 @@ int main()
 	        	}
 
 	        	
-	        	printf("closing\n");
+	        	fprintf(stdout, "closing\n");
 
-	        	shutdown(sockfileDesc, SHUT_RDWR); 
-
-	        	close(sockfileDesc);
 	        	shutdown(connectionFileDesc, SHUT_RDWR); 
-
-	        	close(connectionFileDesc);
+    			close(connectionFileDesc);
+				shutdown(sockfileDesc, SHUT_RDWR);
+    			close(sockfileDesc);
 
 	        }
 	        else
 	        {
-	        	printf("error could not bind\n");
+	        	fprintf(stdout, "error could not bind\n");
+	        	sleep(15);
 	        }
 
 
         }
         else
         {
-        	printf("binding did not happen\n");
+        	fprintf(stdout, "binding did not happen\n");
+        	sleep(15);
         }
 
 
@@ -346,5 +473,6 @@ int main()
     }
 
 
+	}
 	
 }

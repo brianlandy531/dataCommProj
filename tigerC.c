@@ -6,7 +6,7 @@
 #include <netinet/in.h> 
 #include <sys/socket.h> 
 #include <sys/types.h>
-
+#include <time.h> 
 
 #define STR_MAX_LEN 200
 #define MAX 200
@@ -14,6 +14,8 @@
 #define SADDR_STRUCT struct sockaddr 
 #define TEST_PORT 8000
 #define TIMEOUT_TICKS 1000000000
+
+#define INPUT_RANGE 100
 
 char messageToSend[STR_MAX_LEN];
     char messageToRecv[STR_MAX_LEN];
@@ -79,7 +81,7 @@ int getTokens( char *inbuff, struct tokenInputs *outToks)
     char delims[] = " \n";
     struct tokenInputs* tokStruct = NULL;
     
-    //printf("Start here for confusion");
+    //fprintf(stdout, "Start here for confusion");
 
     if(tokStruct ==NULL)
     {
@@ -90,12 +92,12 @@ int getTokens( char *inbuff, struct tokenInputs *outToks)
     //if (argc == 4 || argc == 2)  
     //{ 
     strncpy(toks, inbuff, STR_MAX_LEN);
-    //printf("%s", inbuff);
+    //fprintf(stdout, "%s", inbuff);
     char* token = strtok(toks, delims); 
     // Keep printing tokens while one of the 
     // delimiters present in str[]. 
     while (token != NULL) { 
-        //printf("%s\n", token); 
+        //fprintf(stdout, "%s\n", token); 
         strncpy(tokStruct->inArg[argCount], token, STR_MAX_LEN);
         argCount++;
         token = strtok(NULL, delims); 
@@ -129,11 +131,11 @@ int readMessage(int socket, char* buffer)
     {
         
         int result = read(socket, buffer, STR_MAX_LEN);
-        printf("%d", result);
+        //fprintf(stdout, "%d", result);
 
         if(strcmp(buffer, start)!=0)
         {
-            printf("read success: %s\n", buffer);
+            //fprintf(stdout, "read success: %s\n", buffer);
             break;
             return 0;
         }
@@ -156,7 +158,7 @@ int readMessageBlock(int socket, char* buffer)
         read(socket, buffer, STR_MAX_LEN);
         if(strcmp(buffer, start)!=0)
         {
-            printf("%s\n", buffer);
+            //fprintf(stdout, "%s\n", buffer);
             break;
             return 0;
         }
@@ -187,7 +189,7 @@ int main(int argc, char *argv[])
 
 
 	char inbuff[STR_MAX_LEN] = "";
-    printf("Program name %s\n", argv[0]);
+    fprintf(stdout, "Program name %s\n", argv[0]);
     char delims[] = " \n";
     struct  tokenInputs* currTok;
     currTok = malloc(sizeof( struct tokenInputs));
@@ -201,20 +203,22 @@ int main(int argc, char *argv[])
                 
                 if(tconnect==1)
                 {
-                    printf("Already connected\n");
+                    fprintf(stdout, "Already connected\n");
                 }
                 {
-                    printf("tconnecting\n");
+                    fprintf(stdout, "tconnecting\n");
                     //Server connect logic
                     
                     tconnect =1;
+
+// | fprintfBLOCK
 
                     sockfileDesc = socket(AF_INET, SOCK_STREAM, 0); 
                     sockSeperateFileDesc = socket(AF_INET, SOCK_STREAM, 0); 
 
                     if(sockfileDesc ==-1 || sockSeperateFileDesc ==-1)
                     {
-                        printf("Try again, socket not created\n");
+                        fprintf(stdout, "Try again, socket not created\n");
 
                     }
                     else
@@ -223,23 +227,85 @@ int main(int argc, char *argv[])
                         Server_info.sin_family = AF_INET;
                         //Provide string with saddr
                         Server_info.sin_addr.s_addr=inet_addr(currTok->inArg[1]);
-                        Server_info.sin_port= htons(TEST_PORT);
+                        
+
+
+                       
                         //sadd_serv = (SADDR_STRUCT) Server_info;
-                        int retval = connect(sockfileDesc, (SADDR_STRUCT*)&Server_info, sizeof(Server_info));
+                        int retval = -1;
+
+
+                        int ctr = 0;
+
+                        int portToUSe = 0;
+
+                        sleep(1);
+
+                        int MAX_RETRY = 15;
+
+                        int retryRange = 0;
+                        int found =0;
+
+                        int MAXdel = 25000;
+
+                        int MINdel = 5000;
+
+                        int randAdd;
+
+                        while(retryRange < MAX_RETRY)
+                        {
+                            ctr = 0;
+
+                        while(ctr< INPUT_RANGE)
+                        {
+
+                            srand(time(0));
+                            randAdd = (rand()%(MAXdel-MINdel+1)) + MINdel; 
+                            usleep(45000+randAdd);
+
+                            portToUSe = TEST_PORT+ctr;
+                             Server_info.sin_port= htons(portToUSe);
+                            retval = connect(sockfileDesc, (SADDR_STRUCT*)&Server_info, sizeof(Server_info));
+                            if(retval==0)
+                            {
+                                printf("Socket assigned to %d", ctr);
+                                found =1;
+                                break;
+
+                            }
+                            printf("Failed to connect to: %d\n",portToUSe);
+                            ctr = ctr+1;
+
+                        }
+
+                        if(found==1)
+                        {
+                            break;
+                        }
+                        retryRange++;
+
+                        }
+
+                        if(found==0)
+                        {
+                            fprintf(stdout, "MAX RETRIES ATTEMPTED, Can't Connect\n");
+                        }
+
+
                         if(retval==0)
                         {
                             //do client stuff
-                            printf("Ready to do server lcient stuff\n");
+                            fprintf(stdout, "Ready to do server lcient stuff\n");
                             //Pass connection off to sub client through threads
                                 //sleep(1);
                                 int resultnum = readMessage(sockfileDesc, messageToRecv);
-                                //printf("%d", resultnum);
-                                printf("%s\n", messageToRecv);
+                                //fprintf(stdout, "%d", resultnum);
+                                //fprintf(stdout, "%s\n", messageToRecv);
                                 //respond to message
                                 if(strcmp(messageToRecv, "auth")==0)
                                 {
-                                    printf("authing\n");
-                                    printf("\n");
+                                    fprintf(stdout, "authing\n");
+                                    fprintf(stdout, "\n");
 
                                     //send user and pass
                                     //put user in here
@@ -249,23 +315,42 @@ int main(int argc, char *argv[])
                                     sendMessage(sockfileDesc, messageToSend);
 
                                     int resultnum = readMessage(sockfileDesc, messageToRecv);
-                                    printf("%s\n", messageToRecv);
+                                    fprintf(stdout, "%s\n", messageToRecv);
 
                                     int newPort = getPortFromAuthMsg(messageToRecv);
-                                    printf("--> %d", newPort);
+                                    fprintf(stdout, "--> %d", newPort);
 
                                     Server_info.sin_port= htons(newPort);
                                     
                                     sleep(2);
                                     //make new connection
                                     retval = connect(sockSeperateFileDesc, (SADDR_STRUCT*)&Server_info, sizeof(Server_info));
-                                    printf("\n%d\n", retval);
+                                    //fprintf(stdout, "\n%d\n", retval);
 
                                     strcpy(messageToSend,"I'm ALive!!!\n");
                                     sendMessage(sockSeperateFileDesc, messageToSend);
 
-                                    close(sockfileDesc);
+                                    // int first = 0;
+                                    // while(1)
+                                    // {
+
+                                        strcpy(messageToSend,"Still awake?!!!\n");
+                                        sendMessage(sockSeperateFileDesc, messageToSend);
+
+                                    //     if(first==0)
+                                    //     {
+                                    //         first =1; 
+                                    //         shutdown(sockfileDesc,SHUT_RDWR);
+                                    //         close(sockfileDesc);
+                                    //     }
+
+
+                                    // }
+
+
+
                                     shutdown(sockfileDesc,SHUT_RDWR);
+                                    close(sockfileDesc);
 
                                 }  
 
@@ -273,7 +358,8 @@ int main(int argc, char *argv[])
                         }
                         else
                         {
-                            printf("Failed to connect\n");
+
+                            fprintf(stdout, "Failed to connect\n");
                         }
 
                     }     
@@ -287,29 +373,88 @@ int main(int argc, char *argv[])
                 if(tconnect)
                 {
                     // do something
-                printf("tgetting\n");
+                fprintf(stdout, "tgetting\n");
                 //file request logic
                 }
                 else
                 {
-                    printf("connect first\n");
+                    fprintf(stdout, "connect first\n");
                 }
                 
         }
         else if (strcmp( "tput", currTok->inArg[0]) ==0)
         {
 
-               
+               FILE* fileptr;
+
+                char buffer[STR_MAX_LEN];
+
                 //file transfer logic
                 if(tconnect)
                 {
                     // do something
-                    printf("tputting\n");
+                    fprintf(stdout, "tputting\n");
+
+                    
+
+                    //send name
+
+
+                    fileptr = fopen(currTok->inArg[1], "r");
+
+                    if(fileptr==NULL)
+                    {
+                        printf("Error file not sent\n\n"); 
+
+                    }
+                    else
+                    {
+                        strcpy(messageToSend, "tputStart");
+                        sendMessage(sockSeperateFileDesc, messageToSend);
+                        
+                        strcpy(messageToSend, currTok->inArg[1]);
+                        sendMessage(sockSeperateFileDesc, messageToSend);
+
+
+                        while(fgets(buffer, STR_MAX_LEN, (FILE*) fileptr)) 
+                        {
+                        //fprintf(stdout, "%s\n", buffer);
+                        strcpy(messageToSend, buffer);
+                        sendMessage(sockSeperateFileDesc, messageToSend);
+                        }
+
+                        strcpy(messageToSend, "close_file");
+                        sendMessage(sockSeperateFileDesc, messageToSend);
+                    
+                        readMessage(sockSeperateFileDesc, messageToRecv);
+
+                        if (strcmp( "all_done", messageToRecv) ==0 )
+                        {
+                            printf("Transferred succesfully please input a new command\n");
+
+                        }
+                        else
+                        {
+
+                            printf("Error occoured\n");
+
+                        }
+
+
+                    }
+
+                    
+
+                    //while(file)
+
+
+                    //send close signature
+
 
                 }
                 else
                 {
-                    printf("connect first\n");
+                    fprintf(stdout, "connect first\n");
                 }
                 
         }
@@ -322,22 +467,23 @@ int main(int argc, char *argv[])
                 if(tconnect)
                 {
                     tconnect = 0;
-                    close(sockfileDesc);
+                    
                     shutdown(sockfileDesc,SHUT_RDWR);
-                    printf("closing\n");
+                    close(sockfileDesc);
+                    fprintf(stdout, "closing\n");
 
 
                 }
                 else
                 {
-                    printf("Nothing to close\n");
+                    fprintf(stdout, "Nothing to close\n");
 
                 }
                 
         }
         else
         {
-            printf("INPUT NOT RECOGNIZED\n");
+            fprintf(stdout, "INPUT NOT RECOGNIZED\n");
         }
 
         memset(inbuff, 0, STR_MAX_LEN);

@@ -8,11 +8,11 @@ exampleCLS:
 	gcc -o client myclient.c
 	gcc -o server myserver.c
 
-tigerS: tigerS.c
-	gcc -g -o tigerS tigerS.c
+TigerS: tigerS.c
+	gcc -g -o TigerS tigerS.c
 
-tigerC: tigerC.c
-	gcc -g -o tigerC tigerC.c
+TigerC: tigerC.c
+	gcc -g -o TigerC tigerC.c
 
 threads:
 	gcc -pthread -o bin pthreadExample.c
