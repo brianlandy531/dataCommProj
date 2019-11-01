@@ -13,7 +13,7 @@
 #define MAX 200
 
 #define SADDR_STRUCT struct sockaddr 
-#define MAX_BACK_LOG 100
+#define MAX_BACK_LOG 101
 #define STAT_SERVER_ADDRESS "127.0.0.1"
 #define TIMEOUT_TICKS 1000000000
 
@@ -154,7 +154,6 @@ int authorizeUser(char* user)
 
 	}
 
-
 	fclose(fileptr);
 
 	return -1;
@@ -202,17 +201,17 @@ int runRespondProc(pid_t procNum, int line)
 
 				strcat(name, "copied.txt");
 
-	        	fileptr = fopen(name,"wb");
+	        	fileptr = fopen(name,"w");
 	        	if(fileptr)
 	        	{
 					//whilenot file close
 
 					error =	readMessage(line, buf);
 
-					while(strcmp( "last_line", buf) !=0) 
+					while(strcmp( "close_file", buf) !=0) 
 	                {
 	                	
-	                	fwrite(buf, sizeof(int), STR_MAX_LEN, fileptr);
+	                	fprintf(fileptr, "%s", buf);
 	                	error =	readMessage(line, buf);
 	                	//sendMessage(line, "accepted");
 	                	
@@ -224,19 +223,7 @@ int runRespondProc(pid_t procNum, int line)
 						}
 	                }
 
-	                error =	readMessage(line, buf);
-
-	                int lastBuf = atoi(buf);
-
-	                fprintf(stdout, "Last buf is %d", lastBuf);
-
-	                fprintf(stdout, "%s\n", lastBuf);
-
-	                error =	readMessage(line, buf);
-
-	                fwrite(buf, sizeof(int), lastBuf, fileptr);
-
-					//fflush(fileptr); 
+					fflush(fileptr); 
 
 	                fclose(fileptr);
 					//send done ack
@@ -271,7 +258,6 @@ int runRespondProc(pid_t procNum, int line)
 
 int main()
 {
-	int bindRetry=0;
 	int reassignPort = 0;
  	int sockfileDesc = -1;
 	
@@ -304,11 +290,7 @@ int main()
     	Server_info.sin_family = AF_INET;
         //Provide string with saddr
         Server_info.sin_addr.s_addr=inet_addr(STAT_SERVER_ADDRESS);
-
-        int portTry = 0;
-        portTry = (numClients+bindRetry) % MAX_BACK_LOG;
-
-        Server_info.sin_port= htons(TEST_PORT+portTry);
+        Server_info.sin_port= htons(TEST_PORT+numClients);
 
        	//bind
         int bindret = bind(sockfileDesc, (SADDR_STRUCT*) &(Server_info), sizeof(Server_info));
@@ -357,7 +339,7 @@ int main()
 
 	        	int allowedIn =authorizeUser(messageToRecv);
 
-	        	if(allowedIn==1)
+	        	if(allowedIn)
 	        	{
 
 	        		//////////////////////////////////////////////////////////////////////
@@ -393,6 +375,7 @@ int main()
 		        			int lengthaddr = sizeof(client_info); 
 		        			connectionFileDescNew = accept(sockfileDescNew, (SADDR_STRUCT*)&client_info, &lengthaddr);
 		        		
+//		        			sleep(1);
 		        				
 		        			pid_t procNum = fork();
 
@@ -448,17 +431,14 @@ int main()
 	        	}
 	        	else{
 
-	        		strcpy(messageToSend, "FAILED\n");
-	        		sendMessage(connectionFileDesc,messageToSend);
+	        		fprintf(stdout, "closing\n");
 
-	        		fprintf(stdout, "Try again\n");
+	        		shutdown(sockfileDesc, SHUT_RDWR); 
 
-	        		//shutdown(sockfileDesc, SHUT_RDWR); 
+	        		close(sockfileDesc);
+	        		shutdown(connectionFileDesc, SHUT_RDWR); 
 
-	        		//close(sockfileDesc);
-	        		//shutdown(connectionFileDesc, SHUT_RDWR); 
-
-	        		//close(connectionFileDesc);
+	        		close(connectionFileDesc);
 	        	}
 
 	        	
@@ -481,8 +461,7 @@ int main()
         else
         {
         	fprintf(stdout, "binding did not happen\n");
-        	bindRetry++;
-        	sleep(3);
+        	sleep(15);
         }
 
 

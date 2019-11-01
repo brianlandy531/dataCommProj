@@ -175,8 +175,6 @@ int sendMessage(int socket, char* buffer)
 
 }
 
-
-
 int main(int argc, char *argv[])
 {
 
@@ -213,6 +211,7 @@ int main(int argc, char *argv[])
                     
                     tconnect =1;
 
+// | fprintfBLOCK
 
                     sockfileDesc = socket(AF_INET, SOCK_STREAM, 0); 
                     sockSeperateFileDesc = socket(AF_INET, SOCK_STREAM, 0); 
@@ -320,52 +319,42 @@ int main(int argc, char *argv[])
                                     sendMessage(sockfileDesc, messageToSend);
 
                                     int resultnum = readMessage(sockfileDesc, messageToRecv);
+                                    fprintf(stdout, "%s\n", messageToRecv);
+
+                                    int newPort = getPortFromAuthMsg(messageToRecv);
+                                    fprintf(stdout, "--> %d", newPort);
+
+                                    Server_info.sin_port= htons(newPort);
                                     
-                                    if (strcmp( "FAILED\n", messageToRecv) !=0 )
-                                    {   
+                                    sleep(2);
+                                    //make new connection
+                                    retval = connect(sockSeperateFileDesc, (SADDR_STRUCT*)&Server_info, sizeof(Server_info));
+                                    //fprintf(stdout, "\n%d\n", retval);
 
-                                        fprintf(stdout, "%s\n", messageToRecv);
+                                    strcpy(messageToSend,"I'm ALive!!!\n");
+                                    sendMessage(sockSeperateFileDesc, messageToSend);
 
-                                        int newPort = getPortFromAuthMsg(messageToRecv);
-                                        fprintf(stdout, "--> %d", newPort);
+                                    // int first = 0;
+                                    // while(1)
+                                    // {
 
-                                        Server_info.sin_port= htons(newPort);
-                                        
-                                        sleep(2);
-                                        //make new connection
-                                        retval = connect(sockSeperateFileDesc, (SADDR_STRUCT*)&Server_info, sizeof(Server_info));
-                                        //fprintf(stdout, "\n%d\n", retval);
-
-                                        strcpy(messageToSend,"I'm ALive!!!\n");
+                                        strcpy(messageToSend,"Still awake?!!!\n");
                                         sendMessage(sockSeperateFileDesc, messageToSend);
 
-                                        // int first = 0;
-                                        // while(1)
-                                        // {
-
-                                            strcpy(messageToSend,"Still awake?!!!\n");
-                                            sendMessage(sockSeperateFileDesc, messageToSend);
-
-                                        //     if(first==0)
-                                        //     {
-                                        //         first =1; 
-                                        //         shutdown(sockfileDesc,SHUT_RDWR);
-                                        //         close(sockfileDesc);
-                                        //     }
+                                    //     if(first==0)
+                                    //     {
+                                    //         first =1; 
+                                    //         shutdown(sockfileDesc,SHUT_RDWR);
+                                    //         close(sockfileDesc);
+                                    //     }
 
 
-                                        // }
+                                    // }
 
 
 
-                                        shutdown(sockfileDesc,SHUT_RDWR);
-                                        close(sockfileDesc);
-                                    }
-                                    else
-                                    {
-                                        fprintf(stdout, "Auth Failed, try again\n");
-
-                                    }
+                                    shutdown(sockfileDesc,SHUT_RDWR);
+                                    close(sockfileDesc);
 
                                 }  
 
@@ -402,11 +391,6 @@ int main(int argc, char *argv[])
 
                FILE* fileptr;
 
-               int c = 0;
-               int cur=0;
-
-               int buff[STR_MAX_LEN];
-
                 char buffer[STR_MAX_LEN];
 
                 //file transfer logic
@@ -414,7 +398,14 @@ int main(int argc, char *argv[])
                 {
                     // do something
                     fprintf(stdout, "tputting\n");
-                    fileptr = fopen(currTok->inArg[1], "rb");
+
+                    
+
+                    //send name
+
+
+                    fileptr = fopen(currTok->inArg[1], "r");
+
                     if(fileptr==NULL)
                     {
                         printf("Error file not sent\n\n"); 
@@ -428,39 +419,25 @@ int main(int argc, char *argv[])
                         strcpy(messageToSend, currTok->inArg[1]);
                         sendMessage(sockSeperateFileDesc, messageToSend);
 
-                        while((c=fgetc(fileptr))!=EOF)
+
+                        while(fgets(buffer, STR_MAX_LEN, (FILE*) fileptr)) 
                         {
-                                buff[cur] = c;
-                                cur = cur +1;
-                                if(cur == STR_MAX_LEN)
-                                {
-                                    for(int j=0; j<STR_MAX_LEN; j++)
-                                    {
-                                         messageToSend[j] = buff[j];
-                                        //send message
-                                    }
-                                       sendMessage(sockSeperateFileDesc, messageToSend);
-                                    cur=0;
-                                }
-                        }
-
-                        strcpy(messageToSend, "last_line");
-                        sendMessage(sockSeperateFileDesc, messageToSend);
-
-                        sprintf(messageToSend, "%d\n", cur);
-                        sendMessage(sockSeperateFileDesc, messageToSend);
-
-                        for(int j=0; j<cur; j++)
-                        {
-                             messageToSend[j] = buff[j];
-                                    
-                        }
+                            //fprintf(stdout, "%s\n", buffer);
+                            strcpy(messageToSend, buffer);
                             sendMessage(sockSeperateFileDesc, messageToSend);
 
-                            memset(buffer, '0', STR_MAX_LEN);
+
+                            // readMessage(sockSeperateFileDesc, messageToRecv);
+
+                            // while(strcmp(messageToRecv,"accepted")!=0)
+                            // {
+                            //     //Resend
+                            //     readMessage(sockSeperateFileDesc, messageToRecv);
+                                
+                            // }
 
 
-                        
+                        }
 
                         strcpy(messageToSend, "close_file");
                         sendMessage(sockSeperateFileDesc, messageToSend);
