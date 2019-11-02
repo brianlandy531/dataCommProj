@@ -11,6 +11,7 @@
 
 #define STR_MAX_LEN 200
 #define MAX 200
+#define RESPONSE "recvd"
 
 #define SADDR_STRUCT struct sockaddr 
 #define MAX_BACK_LOG 100
@@ -44,7 +45,14 @@ struct serverActivity
 
 int numClients = 0;
 
+int sendAck(int socket)
+{
+	strcpy(messageToSend, RESPONSE);
+    int res = write(socket, messageToSend, STR_MAX_LEN); 
+    bzero(messageToSend, STR_MAX_LEN);
+    return res;
 
+}
 
 int sendMessage(int socket, char* buffer)
 {
@@ -72,7 +80,7 @@ int readMessageBlock(int socket, char* buffer)
         read(socket, buffer, STR_MAX_LEN);
         if(strcmp(buffer, start)!=0)
         {
-            fprintf(stdout, "%s\n", buffer);
+            //fprintf(stdout, "%s\n", buffer);
             
             return 0;
             break;
@@ -118,7 +126,7 @@ int readMessage(int socket, char* buffer)
 		//result(stdout, "%d", result);
         if(strcmp(buffer, start)!=0)
         {
-            fprintf(stdout, "read success: %s\n", buffer);
+            //fprintf(stdout, "read success: %s\n", buffer);
             
             return 0;
  			break;
@@ -127,6 +135,32 @@ int readMessage(int socket, char* buffer)
     }
     return -1;
 }
+
+// int readMessageBin(int socket, int* buffer)
+// {
+
+//     bzero(buffer, sizeof(int)*STR_MAX_LEN);
+//     int* start[STR_MAX_LEN];
+//     bzero(start, sizeof(int)*STR_MAX_LEN);
+//     memcpy(start, buffer, sizeof(int)*STR_MAX_LEN);
+    
+//     for(int x =0; x<TIMEOUT_TICKS; x++)
+//     {
+        
+//         int result = read(socket, buffer, sizeof(int)*STR_MAX_LEN);
+        
+// 		//result(stdout, "%d", result);
+//         if(memcmp(buffer, start,sizeof(int)*STR_MAX_LEN)!=0)
+//         {
+//             //fprintf(stdout, "read success: %s\n", buffer);
+            
+//             return 0;
+//  			break;
+//         }
+
+//     }
+//     return -1;
+// }
 
 int readMessageBin(int socket, int* buffer)
 {
@@ -155,7 +189,6 @@ int readMessageBin(int socket, int* buffer)
 }
 
 
-
 int authorizeUser(char* user)
 {
 
@@ -172,7 +205,7 @@ int authorizeUser(char* user)
 
 	while(fgets(buffer, 255, (FILE*) fileptr)) 
 	{
-    fprintf(stdout, "%s\n", buffer);
+    //fprintf(stdout, "%s\n", buffer);
     
     buffer[strcspn(buffer, "\n")] = 0;
     if(strcmp(buffer, user)==0)
@@ -266,9 +299,12 @@ int runRespondProc(pid_t procNum, int line)
 	                {
 	                	//read and do a buff write
 
-	                	error =	readMessageBin(line, fgetCRes);
-	                	fwrite(fgetCRes, sizeof(int), STR_MAX_LEN, fileptr);
-	                	fprintf(stdout, "Line recieved\n");
+//	                	error =	readMessageBin(line, fgetCRes);
+						error =	readMessage(line, messageToRecv);
+	                	
+	                	fwrite(messageToRecv, sizeof(char), STR_MAX_LEN, fileptr);
+	                	sendAck(line);
+	                		//fprintf(stdout, "Line recieved\n");
 
 		        		if(error==-1)
 						{
@@ -279,9 +315,11 @@ int runRespondProc(pid_t procNum, int line)
 
 	                printf("Out of loop\n");
 	                
-	                error =	readMessageBin(line, fgetCRes);
+	                error =	readMessage(line, messageToRecv);
 
-	                fwrite(fgetCRes, sizeof(int), lastBuf, fileptr);
+
+
+	                fwrite(messageToRecv, sizeof(char), lastBuf, fileptr);
 
                     fprintf(stdout,"Hereserver1\n");
 
@@ -337,7 +375,7 @@ int main()
     SADDR_STRUCT sadd_serv;
 
     struct serverActivity serverUsage;
-    
+    int portTry = 0;
     while(1)
     {
 
@@ -360,7 +398,7 @@ int main()
         //Provide string with saddr
         Server_info.sin_addr.s_addr=inet_addr(STAT_SERVER_ADDRESS);
 
-        int portTry = 0;
+        
         portTry = (numClients+bindRetry) % MAX_BACK_LOG;
 
         Server_info.sin_port= htons(TEST_PORT+portTry);
@@ -408,7 +446,7 @@ int main()
 
 	        	readMessage(connectionFileDesc, messageToRecv);
 
-	        	fprintf(stdout, "%s\n", messageToRecv);
+	        	//fprintf(stdout, "%s\n", messageToRecv);
 
 	        	int allowedIn =authorizeUser(messageToRecv);
 

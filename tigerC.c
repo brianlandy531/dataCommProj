@@ -14,7 +14,7 @@
 #define SADDR_STRUCT struct sockaddr 
 #define TEST_PORT 8000
 #define TIMEOUT_TICKS 1000000000
-
+#define RESPONSE "recvd"
 #define INPUT_RANGE 100
 
 char messageToSend[STR_MAX_LEN];
@@ -28,6 +28,27 @@ struct tokenInputs
     int argCount;
     char inArg[MAX_ARGS][STR_MAX_LEN];
 };
+
+int waitAck(int socket)
+{
+    bzero(messageToRecv, STR_MAX_LEN);
+    for(int x =0; x<TIMEOUT_TICKS; x++)
+    {
+        
+        int result = read(socket, messageToRecv, STR_MAX_LEN);
+        //fprintf(stdout, "%d", result);
+
+        if(strcmp(messageToRecv, RESPONSE)==0)
+        {
+            //fprintf(stdout, "read success: %s\n", buffer);
+            
+            return 0;
+        }
+
+    }
+    return -1;
+}
+
 
 int findIndex(const char *fullstring, const char *lookfor) 
 {
@@ -399,7 +420,7 @@ int main(int argc, char *argv[])
         {
 
                FILE* fileptr;
-
+               int error=-1;
                int c = 0;
                int cur=0;
 
@@ -439,8 +460,18 @@ int main(int argc, char *argv[])
                                 }
                         }
 
-                        
-                        
+                        int fsize = 0;
+                        fclose(fileptr);
+                        fflush(fileptr);
+                        fileptr = fopen(currTok->inArg[1], "rb");
+                        rewind(fileptr);
+                        fsize = 0;   
+                        while ((c = getc(fileptr)) != EOF) {fsize++;}
+           
+                        bufferSendCount =  fsize/STR_MAX_LEN;
+                        cur = fsize%STR_MAX_LEN;
+
+                        printf("Blocks: %d and last block: %d",cur, bufferSendCount );
                         
                         //send last line size
                         sprintf(messageToSend, "%d:%d:", cur, bufferSendCount);
@@ -453,48 +484,45 @@ int main(int argc, char *argv[])
                         fflush(fileptr);
                         rewind(fileptr);
                         fclose(fileptr); 
-                        fflush(fileptr);
                         fileptr = fopen(currTok->inArg[1], "rb");
-                        rewind(fileptr);
 
-                        while((c=fgetc(fileptr))!=EOF)
-                        {
-                                buff[cur] = c;
-                                cur = cur +1;
-                                if(cur == STR_MAX_LEN)
-                                {
-                                    for(int j=0; j<STR_MAX_LEN; j++)
-                                    {
-                                         messageToSendBin[j] = buff[j];
-                                        //send message
-                                    }
-                                    printf("sending\n\n");
-                                       sendMessageBin(sockSeperateFileDesc, messageToSendBin);
-                                    cur=0;
-                                    //printf("Limit reached, sending\n");
-                                }
-                        }
+                        for(int i= 0; i < bufferSendCount; i++)
+                        {                           
 
-                        for(int j=0; j<cur; j++)
-                        {
-                             messageToSendBin[j] = buff[j];
-                        }
+                           error = fread(messageToSend,sizeof(char),STR_MAX_LEN,fileptr);
 
-                        //send last line
-                        sendMessageBin(sockSeperateFileDesc, messageToSendBin);
-                        
-                        printf("here client\n\n");
+                           if(error==0)
+                           {
+                            printf("ERROR\n");
+                           }
+                           else
+                           {
+                                sendMessage(sockSeperateFileDesc, messageToSend);
+                           }
+                           error = waitAck(sockSeperateFileDesc);
+                           if(error==-1)
+                           {
+                            printf("ERROR\n");
+                            break;
+                            printf("timeout error occoured\n");
+                           }
+                        } 
 
-                        //send close directive
-                        //strcpy(messageToSend, "close_file");
-                        //sendMessage(sockSeperateFileDesc, messageToSend);
-                    
-                        //acknowledge closing
-                        printf("Here2\n");
-                        readMessage(sockSeperateFileDesc, messageToRecv);
+                            printf("Finish last portion\n");
 
+                            error = fread(messageToSend,sizeof(char),cur,fileptr);
 
-                        printf("Here3\n");
+                           if(error==0)
+                           {
+                            printf("ERROR\n");
+                           }
+                           else
+                           {
+                                sendMessage(sockSeperateFileDesc, messageToSend);
+                           }
+
+                           readMessage(sockSeperateFileDesc, messageToRecv);
+                                    
 
                         //check closing
                         if (strcmp( "all_done", messageToRecv) ==0 )
@@ -504,21 +532,9 @@ int main(int argc, char *argv[])
                         }
                         else
                         {
-
                             printf("Error occoured\n");
-
                         }
-
-
                     }
-
-                    
-
-                    //while(file)
-
-
-                    //send close signature
-
 
                 }
                 else
@@ -557,6 +573,9 @@ int main(int argc, char *argv[])
 
         memset(inbuff, 0, STR_MAX_LEN);
     }
+
+
+    printf("Bug CLosing\n\n");
 
 }
 
