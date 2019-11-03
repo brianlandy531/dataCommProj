@@ -301,112 +301,125 @@ int main()
     int portTry = 0;
     while(1)
     {
-    sockfileDesc = socket(AF_INET, SOCK_STREAM, 0); 
-    fprintf(stdout, "Started\n");
-    if(sockfileDesc ==-1)
-    {
-    	sleep(15);
-        fprintf(stdout, "Try again, socket not created\n");
-    }
-    else
-    {
-    	memset(&Server_info, 0, sizeof(Server_info));
-    	Server_info.sin_family = AF_INET;
-        //Provide string with saddr
-        Server_info.sin_addr.s_addr=inet_addr(STAT_SERVER_ADDRESS);
-        portTry = (numClients+bindRetry) % MAX_BACK_LOG;
-        Server_info.sin_port= htons(TEST_PORT+portTry);
-       	//bind
-        int bindret = bind(sockfileDesc, (SADDR_STRUCT*) &(Server_info), sizeof(Server_info));
-        if(bindret==0)
-        {
-        	fprintf(stdout, "bound properly\n");
-        	//fprintf(stdout, "%d bind ret\n", bindret);
-       		//listen
-        	int listenret = listen(sockfileDesc, MAX_BACK_LOG);
-	        if(listenret==0)
+    	sockfileDesc = socket(AF_INET, SOCK_STREAM, 0); 
+    	fprintf(stdout, "Started\n");
+    	if(sockfileDesc ==-1)
+    	{
+    		sleep(15);
+        	fprintf(stdout, "Try again, socket not created\n");
+    	}
+	    else
+	    {
+	    	memset(&Server_info, 0, sizeof(Server_info));
+	    	Server_info.sin_family = AF_INET;
+	        //Provide string with saddr
+	        Server_info.sin_addr.s_addr=inet_addr(STAT_SERVER_ADDRESS);
+	        portTry = (numClients+bindRetry) % MAX_BACK_LOG;
+	        Server_info.sin_port= htons(TEST_PORT+portTry);
+	       	//bind
+	        int bindret = bind(sockfileDesc, (SADDR_STRUCT*) &(Server_info), sizeof(Server_info));
+	        if(bindret==0)
 	        {
-	        	//accept
-	        	int lengthaddr = sizeof(client_info); 
-	        	printf("Waiting for connection on: %d \n", TEST_PORT+numClients);
-	        	connectionFileDesc = accept(sockfileDesc, (SADDR_STRUCT*)&client_info, &lengthaddr);
-	        	fprintf(stdout, "connect succesfully to client number%d\n", numClients);
-	        	strcpy(messageToSend, "auth");
-	        	//fprintf(stdout, "%s\n", messageToSend);
-				strcpy(messageToSend, "auth");
-	        	int resultnum =sendMessage(connectionFileDesc,messageToSend);
-	        	readMessage(connectionFileDesc, messageToRecv);
-	        	int allowedIn =authorizeUser(messageToRecv);
-	        	if(allowedIn==1)
-	        	{
-	        		fprintf(stdout, "ALLOWED ACCESS\n");
-	        		reassignPort = BASE_SERVER_PORT + numClients; 
-	        		sprintf(messageToSend, "Authorized:%d", reassignPort);
-	        		int resultnum =sendMessage(connectionFileDesc,messageToSend);
-	        		int sockfileDescNew = -1;
-					int connectionFileDescNew = -1;
-        			Server_info.sin_port= htons(reassignPort);
-       				//bind
-       				sockfileDescNew = socket(AF_INET, SOCK_STREAM, 0); 
-        			bindret = bind(sockfileDescNew, (SADDR_STRUCT*) &(Server_info), sizeof(Server_info));
-        			if(bindret==0)
+	        	fprintf(stdout, "bound properly\n");
+	        	//fprintf(stdout, "%d bind ret\n", bindret);
+	       		//listen
+	        	int listenret = listen(sockfileDesc, MAX_BACK_LOG);
+		        if(listenret==0)
+		        {
+		        	//accept
+		        	int lengthaddr = sizeof(client_info); 
+		        	printf("Waiting for connection on: %d \n", TEST_PORT+numClients);
+		        	connectionFileDesc = accept(sockfileDesc, (SADDR_STRUCT*)&client_info, &lengthaddr);
+
+		        	pid_t procNum = fork();
+			        if(procNum == 0)
         			{
-        				listenret = listen(sockfileDescNew, MAX_BACK_LOG);
-		        		if(listenret==0)
-		       	 		{
-		        			fprintf(stdout, "\nGot past listening\n\n");
-		        			int lengthaddr = sizeof(client_info); 
-		        			connectionFileDescNew = accept(sockfileDescNew, (SADDR_STRUCT*)&client_info, &lengthaddr);
-		        			pid_t procNum = fork();
-		        			if(procNum == 0)
-		        			{
-		        				//Child 
-                	        	shutdown(connectionFileDesc, SHUT_RDWR); 
-        						close(connectionFileDesc);
-    							shutdown(sockfileDesc, SHUT_RDWR);
-   	    	 					close(sockfileDesc);		        
-		        				while(1)
-		        				{
-                                	fprintf(stdout, "Client number %d on port%d\n", numClients,reassignPort);
-									runRespondProc(procNum, connectionFileDescNew);									
-		        				}
-		        			}
-		        			else
-		        			{
-		        				fprintf(stdout, "Continuing in parent\n");
-		        				numClients++;
-		        			}
-	    	    			shutdown(connectionFileDesc, SHUT_RDWR); 
-		        			close(connectionFileDesc);
-	        				shutdown(sockfileDesc, SHUT_RDWR);
-		        			close(sockfileDesc);
-		        		}	
+
+		        	fprintf(stdout, "connect succesfully to client number%d\n", numClients);
+		        	strcpy(messageToSend, "auth");
+		        	//fprintf(stdout, "%s\n", messageToSend);
+					strcpy(messageToSend, "auth");
+		        	int resultnum =sendMessage(connectionFileDesc,messageToSend);
+		        	readMessage(connectionFileDesc, messageToRecv);
+		        	int allowedIn =authorizeUser(messageToRecv);
+		        	if(allowedIn==1)
+		        	{
+		        		fprintf(stdout, "ALLOWED ACCESS\n");
+		        		reassignPort = BASE_SERVER_PORT + numClients; 
+		        		sprintf(messageToSend, "Authorized:%d", reassignPort);
+		        		int resultnum =sendMessage(connectionFileDesc,messageToSend);
+		        		int sockfileDescNew = -1;
+						int connectionFileDescNew = -1;
+	        			Server_info.sin_port= htons(reassignPort);
+	       				//bind
+	       				sockfileDescNew = socket(AF_INET, SOCK_STREAM, 0); 
+	        			bindret = bind(sockfileDescNew, (SADDR_STRUCT*) &(Server_info), sizeof(Server_info));
+	        			if(bindret==0)
+	        			{
+	        				listenret = listen(sockfileDescNew, MAX_BACK_LOG);
+			        		if(listenret==0)
+			       	 		{
+			        			fprintf(stdout, "\nGot past listening\n\n");
+			        			int lengthaddr = sizeof(client_info); 
+			        			connectionFileDescNew = accept(sockfileDescNew, (SADDR_STRUCT*)&client_info, &lengthaddr);
+			        			//pid_t procNum = fork();
+			        			//if(procNum == 0)
+			        			//{
+			        				//Child 
+	                	        	shutdown(connectionFileDesc, SHUT_RDWR); 
+	        						close(connectionFileDesc);
+	    							//shutdown(sockfileDesc, SHUT_RDWR);
+	   	    	 					//close(sockfileDesc);		        
+			        				while(1)
+			        				{
+	                                	fprintf(stdout, "Client number %d on port%d\n", numClients,reassignPort);
+										runRespondProc(procNum, connectionFileDescNew);									
+			        				}
+			        			// }
+			        			// else
+			        			// {
+			        			// 	fprintf(stdout, "Continuing in parent\n");
+			        			// 	numClients++;
+			        			// }
+		    	    			shutdown(connectionFileDesc, SHUT_RDWR); 
+			        			close(connectionFileDesc);
+		        				shutdown(sockfileDesc, SHUT_RDWR);
+			        			close(sockfileDesc);
+			        		}	
+			        	}
 		        	}
-	        	}
-	        	else
-	        	{
-	        		strcpy(messageToSend, "FAILED, user not in file\n");
-	        		sendMessage(connectionFileDesc,messageToSend);
-	        	}
-	        	fprintf(stdout, "closing\n");
-	        	shutdown(connectionFileDesc, SHUT_RDWR); 
-    			close(connectionFileDesc);
-				shutdown(sockfileDesc, SHUT_RDWR);
-    			close(sockfileDesc);
+		        	else
+		        	{
+		        		strcpy(messageToSend, "FAILED, user not in file\n");
+		        		sendMessage(connectionFileDesc,messageToSend);
+		        	}
+		        	fprintf(stdout, "closing\n");
+		        	shutdown(connectionFileDesc, SHUT_RDWR); 
+	    			close(connectionFileDesc);
+					shutdown(sockfileDesc, SHUT_RDWR);
+	    			close(sockfileDesc);
+
+	    			}
+        			else
+        			{
+        				fprintf(stdout, "Continuing in parent\n");
+        				numClients++;
+        			}
+
+		        }
+		        else
+		        {
+		        	fprintf(stdout, "Error Listen Failiure\n");
+		        	sleep(15);
+		        }
 	        }
 	        else
 	        {
-	        	fprintf(stdout, "Error Listen Failiure\n");
-	        	sleep(15);
+	        	fprintf(stdout, "Binding did not happen for %d\n", TEST_PORT+portTry);
+	        	bindRetry++;
+	        	sleep(3);
 	        }
-        }
-        else
-        {
-        	fprintf(stdout, "Binding did not happen for %d\n", TEST_PORT+portTry);
-        	bindRetry++;
-        	sleep(3);
-        }
-    }
+	    }
 	}
 	fflush(stdout);
 
