@@ -1,12 +1,14 @@
 #!/bin/bash
 
 n=1
-last=100
+last=20
 
 while [ $n -lt $last ]
 
 do
-  diff down$n.txtdownload.txt upload$n.txtcopied.txt
+  echo $n
   n=$(($n+1))
+
+
 
 done

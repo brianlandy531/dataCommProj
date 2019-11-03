@@ -6,8 +6,8 @@ last=100
 while [ $n -lt $last ]
 
 do
-  cp textlarge.txt upload$n.txt
-  cp textlarge.txt down$n.txt
+  rm upload$n.txt
+  rm down$n.txt
   rm down$n.txtdownload.txt
   rm upload$n.txtcopied.txt
   n=$(($n+1))
