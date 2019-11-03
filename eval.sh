@@ -1,7 +1,7 @@
 #!/bin/bash
 
 n=1
-last=100
+last=2
 
 while [ $n -lt $last ]
 

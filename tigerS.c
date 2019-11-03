@@ -12,20 +12,16 @@
 #define STR_MAX_LEN 200
 #define MAX 200
 #define RESPONSE "recvd"
-
 #define SADDR_STRUCT struct sockaddr 
 #define MAX_BACK_LOG 100
 #define STAT_SERVER_ADDRESS "127.0.0.1"
 #define TIMEOUT_TICKS 1000000000
-
 #define TEST_PORT 8000
-
 #define PASSWORD_TXT "password.txt"
-
 #define BASE_SERVER_PORT 7000
 
 char messageToSend[STR_MAX_LEN]="";
-    char messageToRecv[STR_MAX_LEN]="";
+char messageToRecv[STR_MAX_LEN]="";
 
 int messageToRecvBin[STR_MAX_LEN];
 
@@ -233,7 +229,7 @@ int runRespondProc(pid_t procNum, int line)
 	        	}
 	        	else
 	        	{
-	        		fprintf(stdout, "File request is valid");
+	        		fprintf(stdout, "File request is valid\n");
 	        		strcpy(messageToSend, "VALID_FILE");
 	        		sendMessage(line, messageToSend);
 	        		fileLen = 0;   
@@ -353,7 +349,7 @@ int main()
 				        	fprintf(stdout, "connect succesfully to client number%d\n", numClients);
 				        	strcpy(messageToSend, "auth");
 				        	//fprintf(stdout, "%s\n", messageToSend);
-							strcpy(messageToSend, "auth");
+							//strcpy(messageToSend, "auth");
 
 				        	int resultnum =sendMessage(connectionFileDesc,messageToSend);
 				        	readMessage(connectionFileDesc, messageToRecv);

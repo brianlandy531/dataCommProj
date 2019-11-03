@@ -273,7 +273,7 @@ int main(int argc, char *argv[])
                            
                             if(retval==0)
                             {
-                                fprintf(stdout, "Socket assigned to %d", ctr);
+                                fprintf(stdout, "Socket assigned to %d\n", ctr);
                                 found =1;
                                 break;
 
@@ -382,7 +382,6 @@ int main(int argc, char *argv[])
                             }
                             else
                             {
-                                    fprintf(stdout, "got here\n");
 
                                     //send file name lol
                                     strcpy(messageToSend, currTok->inArg[1]);
@@ -409,7 +408,7 @@ int main(int argc, char *argv[])
 
                                     fprintf(stdout, "File valid\n");
 
-                                    fprintf(stdout, "Size of it%d, %d\n", bufferSendCount, lastBuf);
+                                    fprintf(stdout, "Size of it: Buffers->%d, last buffer->%d\n", bufferSendCount, lastBuf);
 
                                     sendAck(sockfileDesc);
 
@@ -429,7 +428,6 @@ int main(int argc, char *argv[])
                                                     }
                                                 }
 
-                                                fprintf(stdout, "Out of loop\n");
                                                 
 
                                                if(lastBuf!=0)
@@ -441,7 +439,6 @@ int main(int argc, char *argv[])
 
                                                 fwrite(messageToRecv, sizeof(char), lastBuf, fileptr);
 
-                                                fprintf(stdout,"Heresclient1\n");
 
 
 
@@ -451,7 +448,6 @@ int main(int argc, char *argv[])
                                                 strcpy(messageToSend, "all_done");
 
 
-                                                    fprintf(stdout,"Hereclient\n");
 
 
                                                 sendMessage(sockfileDesc, messageToSend);
@@ -488,8 +484,7 @@ int main(int argc, char *argv[])
                 else
                 {
                     fprintf(stdout, "connect first\n");
-                }
-                
+                } 
         }
         else if (strcmp( "tput", currTok->inArg[0]) ==0)
         {
