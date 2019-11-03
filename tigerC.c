@@ -295,17 +295,14 @@ int main(int argc, char *argv[])
                         if(retval==0)
                         {
                             //do client stuff
-                            fprintf(stdout, "Ready to do server lcient stuff\n");
+                            fprintf(stdout, "Connected to Server!\n");
                             //Pass connection off to sub client through threads
                                 //sleep(1);
                                 int resultnum = readMessage(sockfileDesc, messageToRecv);
-                                //fprintf(stdout, "%d", resultnum);
-                                //fprintf(stdout, "%s\n", messageToRecv);
-                                //respond to message
+                               
                                 if(strcmp(messageToRecv, "auth")==0)
                                 {
-                                    fprintf(stdout, "authing\n");
-                                    fprintf(stdout, "\n");
+                                    fprintf(stdout, "Authingorizing client...\n");
 
                                     //send user and pass
                                     //put user in here
@@ -316,13 +313,13 @@ int main(int argc, char *argv[])
 
                                     int resultnum = readMessage(sockfileDesc, messageToRecv);
                                     
-                                    if (strcmp( "FAILED\n", messageToRecv) !=0 )
+                                    //If did not fail
+                                    if (strcmp("FAILED\n", messageToRecv) !=0 )
                                     {   
 
-                                        fprintf(stdout, "%s\n", messageToRecv);
-
+                                       
                                         int newPort = getPortFromAuthMsg(messageToRecv);
-                                        fprintf(stdout, "--> %d", newPort);
+                                        fprintf(stdout, "Authorization Succesful. Reassigning connection to Port: %d", newPort);
 
                                         Server_info.sin_port= htons(newPort);
                                         
@@ -331,7 +328,7 @@ int main(int argc, char *argv[])
                                         retval = connect(sockSeperateFileDesc, (SADDR_STRUCT*)&Server_info, sizeof(Server_info));
                                         //fprintf(stdout, "\n%d\n", retval);
 
-                                        strcpy(messageToSend,"I'm ALive!!!\n");
+                                        strcpy(messageToSend,"I'm\n");
                                         sendMessage(sockSeperateFileDesc, messageToSend);
 
                                         // int first = 0;
@@ -346,7 +343,7 @@ int main(int argc, char *argv[])
                                     }
                                     else
                                     {
-                                        fprintf(stdout, "Auth Failed, try again\n");
+                                        fprintf(stdout, "Authorization Failed, try again\n");
 
                                     }
 

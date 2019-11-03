@@ -561,8 +561,7 @@ int main()
 	        		strcpy(messageToSend, "FAILED\n");
 	        		sendMessage(connectionFileDesc,messageToSend);
 
-	        		fprintf(stdout, "Try again\n");
-
+	        		
 	        		//shutdown(sockfileDesc, SHUT_RDWR); 
 
 	        		//close(sockfileDesc);
