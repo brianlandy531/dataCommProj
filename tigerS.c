@@ -8,6 +8,7 @@
 #include <netinet/in.h> 
 #include <sys/socket.h> 
 #include <sys/types.h>
+#include <arpa/inet.h>
 
 #define STR_MAX_LEN 200
 #define MAX 200
@@ -113,7 +114,7 @@ int readMessage(int socket, char* buffer)
 		//result(stdout, "%d", result);
         if(strcmp(buffer, start)!=0)
         {
-            //fprintf(stdout, "read success: %s\n", buffer);
+            //s(stdout, "read success: %s\n", buffer);
             
             return 0;
  			break;
@@ -316,7 +317,8 @@ int main()
 	    	memset(&Server_info, 0, sizeof(Server_info));
 	    	Server_info.sin_family = AF_INET;
 	        //Provide string with saddr
-	        Server_info.sin_addr.s_addr=inet_addr(STAT_SERVER_ADDRESS);
+	        	//inaddr any means any incoming connection will show up, not just loop back or a specific ip
+	        Server_info.sin_addr.s_addr= htons(INADDR_ANY); //inet_addr(STAT_SERVER_ADDRESS);
 	        portTry = (numClients+bindRetry) % MAX_BACK_LOG;
 	        Server_info.sin_port= htons(TEST_PORT+portTry);
 	       	//bind
