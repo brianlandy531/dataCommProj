@@ -252,6 +252,9 @@ int main(int argc, char *argv[])
                         int MAXdel = 2500000;
                         int MINdel = 500000;
                         int randAdd;
+                      
+                      //////////////////////
+
                         while(retryRange < MAX_RETRY)
                         {
                             ctr = 0;
@@ -278,13 +281,18 @@ int main(int argc, char *argv[])
                             ctr = ctr+1;
                         }
 
-                        if(found==1)
-                        {
-                            break;
-                        }
-                        retryRange++;
+
+
+                            if(found==1)
+                            {
+                                break;
+                            }
+                            retryRange++;
 
                         }
+
+                            //////////////
+
 
                         if(found==0)
                         {
@@ -479,12 +487,6 @@ int main(int argc, char *argv[])
 
                                 }
                             }
-
-//                        }
-  //                      else
-    //                    {
-      //                      fprintf(stdout, "Error file does not exist\n");
-        //                }
 
 
                     
