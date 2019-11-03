@@ -18,10 +18,7 @@
 #define INPUT_RANGE 100
 
 char messageToSend[STR_MAX_LEN];
-    char messageToRecv[STR_MAX_LEN];
-
-int messageToSendBin[STR_MAX_LEN];
-    int messageToRecvBin[STR_MAX_LEN];
+char messageToRecv[STR_MAX_LEN];
 
 struct tokenInputs
 {
@@ -29,22 +26,25 @@ struct tokenInputs
     char inArg[MAX_ARGS][STR_MAX_LEN];
 };
 
+int sendAck(int socket)
+{
+    strcpy(messageToSend, RESPONSE);
+    int res = write(socket, messageToSend, STR_MAX_LEN); 
+    bzero(messageToSend, STR_MAX_LEN);
+    return res;
+
+}
+
 int waitAck(int socket)
 {
     bzero(messageToRecv, STR_MAX_LEN);
     for(int x =0; x<TIMEOUT_TICKS; x++)
     {
-        
         int result = read(socket, messageToRecv, STR_MAX_LEN);
-        //fprintf(stdout, "%d", result);
-
         if(strcmp(messageToRecv, RESPONSE)==0)
-        {
-            //fprintf(stdout, "read success: %s\n", buffer);
-            
+        {            
             return 0;
         }
-
     }
     return -1;
 }
@@ -88,7 +88,6 @@ int getPortFromAuthMsg(const char *fullstring)
 
 int clearToks(struct tokenInputs *input)
 {
-
     strncpy(input->inArg[0], "\0", STR_MAX_LEN);
     strncpy(input->inArg[1], "\0", STR_MAX_LEN);
     strncpy(input->inArg[2], "\0", STR_MAX_LEN);
@@ -99,29 +98,17 @@ int clearToks(struct tokenInputs *input)
 
 int getTokens( char *inbuff, struct tokenInputs *outToks)
 {
-    //char inbuff[STR_MAX_LEN] = "";
     char toks[STR_MAX_LEN] = "";
     int argCount =0; 
     char delims[] = " \n";
     struct tokenInputs* tokStruct = NULL;
-    
-    //fprintf(stdout, "Start here for confusion");
-
     if(tokStruct ==NULL)
     {
         tokStruct = malloc(sizeof( struct tokenInputs));
-
     }    
-    //if correct num args
-    //if (argc == 4 || argc == 2)  
-    //{ 
     strncpy(toks, inbuff, STR_MAX_LEN);
-    //fprintf(stdout, "%s", inbuff);
     char* token = strtok(toks, delims); 
-    // Keep printing tokens while one of the 
-    // delimiters present in str[]. 
     while (token != NULL) { 
-        //fprintf(stdout, "%s\n", token); 
         strncpy(tokStruct->inArg[argCount], token, STR_MAX_LEN);
         argCount++;
         token = strtok(NULL, delims); 
@@ -129,19 +116,12 @@ int getTokens( char *inbuff, struct tokenInputs *outToks)
         {
             break;
         }
-        //strncpy([argCount], token, STR_MAX_LEN);
     } 
     memcpy(outToks, tokStruct, sizeof(struct tokenInputs));
     clearToks(tokStruct);
     free(tokStruct);
     return 0; 
 }
-
-// int sendMessage(int socket, char* buffer)
-// {
-//     write(socket, buffer, STR_MAX_LEN); 
-//     bzero(buffer, STR_MAX_LEN);
-// }
 
 int readMessage(int socket, char* buffer)
 {
@@ -153,17 +133,11 @@ int readMessage(int socket, char* buffer)
     
     for(int x =0; x<TIMEOUT_TICKS; x++)
     {
-        
         int result = read(socket, buffer, STR_MAX_LEN);
-        //fprintf(stdout, "%d", result);
-
         if(strcmp(buffer, start)!=0)
         {
-            //fprintf(stdout, "read success: %s\n", buffer);
-            break;
             return 0;
         }
-
     }
     return -1;
 }
@@ -176,17 +150,13 @@ int readMessageBlock(int socket, char* buffer)
     bzero(start, STR_MAX_LEN);
     strcpy(start, buffer);
     
-    
     while(1)
     {    
         read(socket, buffer, STR_MAX_LEN);
         if(strcmp(buffer, start)!=0)
         {
-            //fprintf(stdout, "%s\n", buffer);
-            break;
             return 0;
         }
-
     }
     return -1;
 }
@@ -218,7 +188,19 @@ int main(int argc, char *argv[])
     struct sockaddr_in Server_info;
     struct sockaddr_in client_info; 
     SADDR_STRUCT sadd_serv;
-    
+    FILE* fileptr;
+    char name[STR_MAX_LEN] = "";
+    int error = 0;
+
+    int binBuffs = 0;
+    int lastBuf=-1;
+
+    int c = 0;
+                
+    int fileLen = 0;
+    char buffer[STR_MAX_LEN];
+    int bufferSendCount = 0;
+    int cur=0;
 
 
 	char inbuff[STR_MAX_LEN] = "";
@@ -260,30 +242,16 @@ int main(int argc, char *argv[])
                         //Provide string with saddr
                         Server_info.sin_addr.s_addr=inet_addr(currTok->inArg[1]);
                         
-
-
-                       
                         //sadd_serv = (SADDR_STRUCT) Server_info;
                         int retval = -1;
-
-
                         int ctr = 0;
-
                         int portToUSe = 0;
-
-                        sleep(1);
-
                         int MAX_RETRY = 15;
-
                         int retryRange = 0;
                         int found =0;
-
                         int MAXdel = 2500000;
-
                         int MINdel = 500000;
-
                         int randAdd;
-
                         while(retryRange < MAX_RETRY)
                         {
                             ctr = 0;
@@ -296,12 +264,9 @@ int main(int argc, char *argv[])
                             usleep(45000+randAdd);
 
                             portToUSe = TEST_PORT+ctr;
-                             Server_info.sin_port= htons(portToUSe);
+                            Server_info.sin_port= htons(portToUSe);
                             retval = connect(sockfileDesc, (SADDR_STRUCT*)&Server_info, sizeof(Server_info));
-                            
-
-                            //Print retval for socket
-
+                           
                             if(retval==0)
                             {
                                 printf("Socket assigned to %d", ctr);
@@ -311,7 +276,6 @@ int main(int argc, char *argv[])
                             }
                             printf("Failed to connect to: %d\n",portToUSe);
                             ctr = ctr+1;
-
                         }
 
                         if(found==1)
@@ -406,9 +370,129 @@ int main(int argc, char *argv[])
                 
                 if(tconnect)
                 {
+
+                    error = 0;
+
+                    binBuffs = 0;
+                    lastBuf=-1;
                     // do something
-                fprintf(stdout, "tgetting\n");
-                //file request logic
+                    fprintf(stdout, "tgetting\n");
+                    //file request logic
+                    
+
+                        strcpy(messageToSend, "tgetStart");
+                        sendMessage(sockSeperateFileDesc, messageToSend);
+                        waitAck(sockSeperateFileDesc);
+                            strcpy(name,currTok->inArg[1]);
+                            strcat(name, "download.txt");
+                            fileptr = fopen(name, "wb");
+
+                            if(fileptr==NULL)
+                            {
+                                printf("Error file not opened\n\n"); 
+
+                            }
+                            else
+                            {
+                                    printf("got here\n");
+
+                                    //send file name lol
+                                    strcpy(messageToSend, currTok->inArg[1]);
+                                    sendMessage(sockSeperateFileDesc, messageToSend);
+
+                                readMessage(sockSeperateFileDesc, messageToRecv);
+                                if(strcmp(messageToRecv, "VALID_FILE")==0)
+                                {
+
+                                    printf("got to file open\n");
+
+                                    //file exists on other end
+                                    error = readMessage(sockSeperateFileDesc, messageToRecv);
+
+                                    char delims[] = ":\n";
+
+                                    char* token = strtok(messageToRecv, delims); 
+
+                                    lastBuf = atoi(token);
+
+                                    token = strtok(NULL, delims); 
+
+                                    binBuffs = atoi(token);
+
+                                    printf("File valid\n");
+
+                                    printf("Size of it%d, %d\n", binBuffs, lastBuf);
+
+                                    sendAck(sockSeperateFileDesc);
+
+                                                for(int x = 0; x<bufferSendCount; x++)
+                                                {
+                                                    //read and do a buff write
+                                                    error = readMessage(sockSeperateFileDesc, messageToRecv);
+                                                    
+                                                    fwrite(messageToRecv, sizeof(char), STR_MAX_LEN, fileptr);
+                                                    sendAck(sockSeperateFileDesc);
+                                                        //fprintf(stdout, "Line recieved\n");
+
+                                                    if(error==-1)
+                                                    {
+                                                        fprintf(stdout, "Error in process file contents incorrect\n");
+                                                        break;
+                                                    }
+                                                }
+
+                                                printf("Out of loop\n");
+                                                
+
+                                               if(lastBuf!=0)
+                                               {
+
+                                                error = readMessage(sockSeperateFileDesc, messageToRecv);
+
+                                                }
+
+                                                fwrite(messageToRecv, sizeof(char), lastBuf, fileptr);
+
+                                                fprintf(stdout,"Heresclient1\n");
+
+
+
+                                                fclose(fileptr);
+                                                //send done ack
+
+                                                strcpy(messageToSend, "all_done");
+
+
+                                                    fprintf(stdout,"Hereclient\n");
+
+
+                                                sendMessage(sockSeperateFileDesc, messageToSend);
+
+                                                error = waitAck(sockSeperateFileDesc);
+
+                                                if(error==0)
+                                                {
+                                                    printf("Transferred succesfully please input a new command\n");
+
+                                                }
+                                                else
+                                                {
+                                                    printf("Error occoured during transmission, no acknowledgment recieved.\n");
+                                                }
+
+                                }
+                            }
+
+//                        }
+  //                      else
+    //                    {
+      //                      fprintf(stdout, "Error file does not exist\n");
+        //                }
+
+
+                    
+
+
                 }
                 else
                 {
@@ -419,15 +503,14 @@ int main(int argc, char *argv[])
         else if (strcmp( "tput", currTok->inArg[0]) ==0)
         {
 
-               FILE* fileptr;
-               int error=-1;
-               int c = 0;
-               int cur=0;
-
-               int buff[STR_MAX_LEN];
-
-                char buffer[STR_MAX_LEN];
-                int bufferSendCount = 0;
+                
+                error=-1;
+                c = 0;
+                
+                fileLen = 0;
+                buffer[STR_MAX_LEN];
+                bufferSendCount = 0;
+                cur=0;
                 //file transfer logic
                 if(tconnect)
                 {
@@ -443,44 +526,18 @@ int main(int argc, char *argv[])
                     {
                         strcpy(messageToSend, "tputStart");
                         sendMessage(sockSeperateFileDesc, messageToSend);
-                        
                         strcpy(messageToSend, currTok->inArg[1]);
                         sendMessage(sockSeperateFileDesc, messageToSend);
-
-                        while((c=fgetc(fileptr))!=EOF)
-                        {
-                                buff[cur] = c;
-                                cur = cur +1;
-                                if(cur == STR_MAX_LEN)
-                                {
-
-                                    bufferSendCount++;
-                                    cur=0;
-                                    //printf("Limit reached, sending\n");
-                                }
-                        }
-
-                        int fsize = 0;
-                        fclose(fileptr);
-                        fflush(fileptr);
                         fileptr = fopen(currTok->inArg[1], "rb");
                         rewind(fileptr);
-                        fsize = 0;   
-                        while ((c = getc(fileptr)) != EOF) {fsize++;}
-           
-                        bufferSendCount =  fsize/STR_MAX_LEN;
-                        cur = fsize%STR_MAX_LEN;
-
-                        printf("Blocks: %d and last block: %d",cur, bufferSendCount );
-                        
-                        //send last line size
+                        fileLen = 0;   
+                        while ((c = getc(fileptr)) != EOF) {fileLen++;}
+            
+                        bufferSendCount =  fileLen/STR_MAX_LEN;
+                        cur = fileLen%STR_MAX_LEN;
                         sprintf(messageToSend, "%d:%d:", cur, bufferSendCount);
-                        
-
                         fprintf(stdout,messageToSend);
-
                         sendMessage(sockSeperateFileDesc, messageToSend);
-
                         fflush(fileptr);
                         rewind(fileptr);
                         fclose(fileptr); 
@@ -488,13 +545,9 @@ int main(int argc, char *argv[])
 
                         for(int i= 0; i < bufferSendCount; i++)
                         {                           
-
                            error = fread(messageToSend,sizeof(char),STR_MAX_LEN,fileptr);
-
                            if(error==0)
-                           {
-                            printf("ERROR\n");
-                           }
+                           {    printf("ERROR\n"); }
                            else
                            {
                                 sendMessage(sockSeperateFileDesc, messageToSend);
@@ -503,27 +556,26 @@ int main(int argc, char *argv[])
                            if(error==-1)
                            {
                             printf("ERROR\n");
-                            break;
                             printf("timeout error occoured\n");
+                            break;
+                            
                            }
                         } 
 
-                            printf("Finish last portion\n");
-
-                            error = fread(messageToSend,sizeof(char),cur,fileptr);
-
-                           if(error==0)
-                           {
-                            printf("ERROR\n");
-                           }
-                           else
-                           {
-                                sendMessage(sockSeperateFileDesc, messageToSend);
+                            if(cur !=0)
+                            {
+                               error = fread(messageToSend,sizeof(char),cur,fileptr);
+                               if(error==0)
+                               {
+                                printf("ERROR\n");
+                               }
+                               else
+                               {
+                                    sendMessage(sockSeperateFileDesc, messageToSend);
+                               }
                            }
 
                            readMessage(sockSeperateFileDesc, messageToRecv);
-                                    
-
                         //check closing
                         if (strcmp( "all_done", messageToRecv) ==0 )
                         {
@@ -532,14 +584,14 @@ int main(int argc, char *argv[])
                         }
                         else
                         {
-                            printf("Error occoured\n");
+                            printf("Error occoured during transmission, no acknowledgment recieved.\n");
                         }
                     }
 
                 }
                 else
                 {
-                    fprintf(stdout, "connect first\n");
+                    fprintf(stdout, "Err: Must connect to server first\n");
                 }
                 
         }
@@ -555,27 +607,35 @@ int main(int argc, char *argv[])
                     
                     shutdown(sockfileDesc,SHUT_RDWR);
                     close(sockfileDesc);
-                    fprintf(stdout, "closing\n");
+                    fprintf(stdout, "Client closing closing connection\n");
 
 
                 }
                 else
                 {
-                    fprintf(stdout, "Nothing to close\n");
+                    fprintf(stdout, "Err nothing to close\n");
 
                 }
                 
         }
         else
         {
-            fprintf(stdout, "INPUT NOT RECOGNIZED\n");
+            fprintf(stdout, "Err: INPUT NOT RECOGNIZED, try again\n");
         }
 
         memset(inbuff, 0, STR_MAX_LEN);
+
+        fprintf(stdout, "Please input a command:\n");
+
     }
 
 
-    printf("Bug CLosing\n\n");
+    fprintf(stdout,"Bug CLosing\n\n");
+
+        fflush(stdout);
+
+
+    exit(0);
 
 }
 

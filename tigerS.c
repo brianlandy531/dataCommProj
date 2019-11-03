@@ -54,6 +54,20 @@ int sendAck(int socket)
 
 }
 
+int waitAck(int socket)
+{
+    bzero(messageToRecv, STR_MAX_LEN);
+    for(int x =0; x<TIMEOUT_TICKS; x++)
+    {
+        int result = read(socket, messageToRecv, STR_MAX_LEN);
+        if(strcmp(messageToRecv, RESPONSE)==0)
+        {            
+            return 0;
+        }
+    }
+    return -1;
+}
+
 int sendMessage(int socket, char* buffer)
 {
 	int res=0;
@@ -136,59 +150,6 @@ int readMessage(int socket, char* buffer)
     return -1;
 }
 
-// int readMessageBin(int socket, int* buffer)
-// {
-
-//     bzero(buffer, sizeof(int)*STR_MAX_LEN);
-//     int* start[STR_MAX_LEN];
-//     bzero(start, sizeof(int)*STR_MAX_LEN);
-//     memcpy(start, buffer, sizeof(int)*STR_MAX_LEN);
-    
-//     for(int x =0; x<TIMEOUT_TICKS; x++)
-//     {
-        
-//         int result = read(socket, buffer, sizeof(int)*STR_MAX_LEN);
-        
-// 		//result(stdout, "%d", result);
-//         if(memcmp(buffer, start,sizeof(int)*STR_MAX_LEN)!=0)
-//         {
-//             //fprintf(stdout, "read success: %s\n", buffer);
-            
-//             return 0;
-//  			break;
-//         }
-
-//     }
-//     return -1;
-// }
-
-int readMessageBin(int socket, int* buffer)
-{
-
-    bzero(buffer, sizeof(int)*STR_MAX_LEN);
-    int* start[STR_MAX_LEN];
-    bzero(start, sizeof(int)*STR_MAX_LEN);
-    memcpy(start, buffer, sizeof(int)*STR_MAX_LEN);
-    
-    for(int x =0; x<TIMEOUT_TICKS; x++)
-    {
-        
-        int result = read(socket, buffer, sizeof(int)*STR_MAX_LEN);
-        
-		//result(stdout, "%d", result);
-        if(memcmp(buffer, start,sizeof(int)*STR_MAX_LEN)!=0)
-        {
-            //fprintf(stdout, "read success: %s\n", buffer);
-            
-            return 0;
- 			break;
-        }
-
-    }
-    return -1;
-}
-
-
 int authorizeUser(char* user)
 {
 
@@ -236,14 +197,20 @@ int runRespondProc(pid_t procNum, int line)
 	FILE* fileptr = NULL;
 
 	int on =1;
+	int c = -1;
+
+	int fileLen = 0;
 
 	int error = 0;
 
-	int binBuffs = 0;
+	int bufferSendCount = 0;
 	int lastBuf=-1;
+
+
 
 	while(on)
 	{
+		fprintf(stdout, "Server is ready to respond\n");
 
 		error =	readMessageBlock(line, buf);
 		//Read messages
@@ -284,10 +251,10 @@ int runRespondProc(pid_t procNum, int line)
 
 					token = strtok(NULL, delims); 
 
-					binBuffs = atoi(token);
+					bufferSendCount = atoi(token);
 
 
-					fprintf(stdout, "%d and %d\n", binBuffs, lastBuf);
+					fprintf(stdout, "%d and %d\n", bufferSendCount, lastBuf);
 
 					
 
@@ -295,11 +262,9 @@ int runRespondProc(pid_t procNum, int line)
 
 
 
-					for(int x = 0; x<binBuffs; x++)
+					for(int x = 0; x<bufferSendCount; x++)
 	                {
 	                	//read and do a buff write
-
-//	                	error =	readMessageBin(line, fgetCRes);
 						error =	readMessage(line, messageToRecv);
 	                	
 	                	fwrite(messageToRecv, sizeof(char), STR_MAX_LEN, fileptr);
@@ -315,9 +280,13 @@ int runRespondProc(pid_t procNum, int line)
 
 	                printf("Out of loop\n");
 	                
+
+	               if(lastBuf!=0)
+	               {
+
 	                error =	readMessage(line, messageToRecv);
 
-
+		            }
 
 	                fwrite(messageToRecv, sizeof(char), lastBuf, fileptr);
 
@@ -347,6 +316,83 @@ int runRespondProc(pid_t procNum, int line)
 				//Respond to Get
 
 				//Respond to exit
+	        	sendAck(line);
+	        	readMessage(line, messageToRecv);
+
+	        	strcpy(name,messageToRecv);
+
+	        	fileptr = fopen(name, "rb");
+
+	        	if(fileptr==NULL)
+	        	{
+	        		fprintf(stdout, "Error file does not exist\n");
+
+
+	        		
+	        	}
+	        	else
+	        	{
+
+	        		fprintf(stdout, "hellooooo");
+
+	        		strcpy(messageToSend, "VALID_FILE");
+	        		sendMessage(line, messageToSend);
+
+	        		fileLen = 0;   
+                    while ((c = getc(fileptr)) != EOF) {fileLen++;}
+        			fflush(fileptr);
+                    rewind(fileptr);
+                    fclose(fileptr); 
+                    fileptr = fopen(name, "rb");
+
+                    bufferSendCount =  fileLen/STR_MAX_LEN;
+                    lastBuf = fileLen%STR_MAX_LEN;
+                    sprintf(messageToSend, "%d:%d:", lastBuf, bufferSendCount);
+
+	        		sendMessage(line, messageToSend);
+
+	        		waitAck(line);
+
+	        		fprintf(stdout, "Server sending good\n");
+
+	        		for(int i= 0; i < bufferSendCount; i++)
+                        {                           
+                           error = fread(messageToSend,sizeof(char),STR_MAX_LEN,fileptr);
+                           if(error==0)
+                           {    printf("ERROR\n"); }
+                           else
+                           {
+                                sendMessage(line, messageToSend);
+                           }
+                           error = waitAck(line);
+                           if(error==-1)
+                           {
+                            printf("ERROR\n");
+                            printf("timeout error occoured\n");
+                            break;
+                            
+                           }
+                        } 
+
+                            if(lastBuf !=0)
+                            {
+                               error = fread(messageToSend,sizeof(char),lastBuf,fileptr);
+                               if(error==0)
+                               {
+                                printf("ERROR\n");
+                               }
+                               else
+                               {
+                                    sendMessage(line, messageToSend);
+                               }
+                           }
+
+                           readMessage(line, messageToRecv);
+                        
+                        	sendAck(line);
+
+	        	}
+
 			}
 
 		}
@@ -355,9 +401,10 @@ int runRespondProc(pid_t procNum, int line)
 		
 
 	}
-	//sleep(30);
-	//printf("PID: %d", procNum);
-	printf("process Died due to connection error");
+
+	fprintf(stdout, "ERROR: process Died due to connection error\n");
+
+	fflush(stdout);
 
 }
 
@@ -420,52 +467,22 @@ int main()
 	        	printf("Waiting for connection on: %d \n", TEST_PORT+numClients);
 
 	        	connectionFileDesc = accept(sockfileDesc, (SADDR_STRUCT*)&client_info, &lengthaddr);
-	        	//numClients++;
-	        	//need to authenticate or close connection
-       			//do
-	        	//Branch to a child thread passing in this FD and child information about the connect
 	        	fprintf(stdout, "connect succesfully to client number%d\n", numClients);
-
-	        	//so stuff here
-
-
-	        	
-
-	        	//int valid = authenticate_user()
-
-	        	//----sleep(1);
 	        	strcpy(messageToSend, "auth");
-	        	
 	        	//fprintf(stdout, "%s\n", messageToSend);
-	        	
 				strcpy(messageToSend, "auth");
 	        	int resultnum =sendMessage(connectionFileDesc,messageToSend);
-	        	//fprintf(stdout, "%d", resultnum);
-
-
-
+	        	
 	        	readMessage(connectionFileDesc, messageToRecv);
-
-	        	//fprintf(stdout, "%s\n", messageToRecv);
 
 	        	int allowedIn =authorizeUser(messageToRecv);
 
 	        	if(allowedIn==1)
 	        	{
-
-	        		//////////////////////////////////////////////////////////////////////
-	        		//spawn child/swap to other port
 	        		fprintf(stdout, "ALLOWED ACCESS\n");
-
-	        		//break socket out
-
 	        		reassignPort = BASE_SERVER_PORT + numClients; 
 	        		sprintf(messageToSend, "Authorized:%d", reassignPort);
-
 	        		int resultnum =sendMessage(connectionFileDesc,messageToSend);
-	        	
-	        		//jump out here yo
-	        		//fork();
 	        		int sockfileDescNew = -1;
 					int connectionFileDescNew = -1;
     
@@ -588,5 +605,9 @@ int main()
 
 
 	}
+
+
+		fflush(stdout);
+
 	
 }
