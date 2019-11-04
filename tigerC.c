@@ -264,7 +264,7 @@ int main(int argc, char *argv[])
                         {
 
                             
-                            randAdd =0; // (rand()%(MAXdel-MINdel+1)) + MINdel; 
+                            randAdd =0; 
                             usleep(45000+randAdd);
 
                             portToUSe = TEST_PORT+ctr;
