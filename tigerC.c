@@ -202,12 +202,13 @@ int main(int argc, char *argv[])
 
 
 	char inbuff[STR_MAX_LEN] = "";
-    fprintf(stdout, "Program name %s\n", argv[0]);
+    fprintf(stdout, "[Client] Program name is %s\n", argv[0]);
     char delims[] = " \n";
     struct  tokenInputs* currTok;
     currTok = malloc(sizeof( struct tokenInputs));
     int tconnect = 0;
 
+    fprintf(stdout, "[Client] Please input a command:\n>>> ");
 
 
     while(fgets(inbuff, STR_MAX_LEN , stdin) != NULL)
@@ -219,10 +220,10 @@ int main(int argc, char *argv[])
                 
                 if(tconnect==1)
                 {
-                    fprintf(stdout, "Already connected\n");
+                    fprintf(stdout, "[Client] Already connected\n");
                 }
                 {
-                    fprintf(stdout, "tconnecting\n");
+                    fprintf(stdout, "[Client] tconnecting\n");
                     //Server connect logic
                     
                     tconnect =1;
@@ -233,7 +234,7 @@ int main(int argc, char *argv[])
 
                     if(sockfileDesc ==-1 || sockfileDesc ==-1)
                     {
-                        fprintf(stdout, "Try again, socket not created\n");
+                        fprintf(stdout, "[Client] Try again, socket not created\n");
 
                     }
                     else
@@ -273,12 +274,12 @@ int main(int argc, char *argv[])
                            
                             if(retval==0)
                             {
-                                fprintf(stdout, "Socket assigned to %d\n", ctr);
+                                fprintf(stdout, "[Client] Socket assigned to %d\n", ctr);
                                 found =1;
                                 break;
 
                             }
-                            fprintf(stdout, "Failed to connect to: %d\n",portToUSe);
+                            fprintf(stdout, "[Client] Failed to connect to: %d\n",portToUSe);
                             ctr = ctr+1;
                         }
 
@@ -297,14 +298,14 @@ int main(int argc, char *argv[])
 
                         if(found==0)
                         {
-                            fprintf(stdout, "MAX RETRIES ATTEMPTED, Can't Connect\n");
+                            fprintf(stdout, "[Client] MAX RETRIES ATTEMPTED, Can't Connect\n");
                         }
 
 
                         if(retval==0)
                         {
                             //do client stuff
-                            fprintf(stdout, "Connected to Server!\n");
+                            fprintf(stdout, "[Client] Connected to Server!\n");
                             //Pass connection off to sub client through threads
                                 //sleep(1);
                                 sendAck(sockfileDesc);
@@ -313,7 +314,7 @@ int main(int argc, char *argv[])
                                
                                 if(strcmp(messageToRecv, "auth")==0)
                                 {
-                                    fprintf(stdout, "Authingorizing client...\n");
+                                    fprintf(stdout, "[Client] Authorizing client...\n");
 
                                     //send user and pass
                                     //put user in here
@@ -332,7 +333,7 @@ int main(int argc, char *argv[])
                                     }
                                     else
                                     {
-                                        fprintf(stdout, "Authorization Failed, try again\n");
+                                        fprintf(stdout, "[Client] Authorization Failed, try again\n");
                                                             tconnect =0;
 
 
@@ -345,7 +346,7 @@ int main(int argc, char *argv[])
                         else
                         {
 
-                            fprintf(stdout, "Failed to connect\n");
+                            fprintf(stdout, "[Client] Failed to connect\n");
                         }
 
                     }     
@@ -364,7 +365,7 @@ int main(int argc, char *argv[])
                     bufferSendCount = 0;
                     lastBuf=-1;
                     // do something
-                    fprintf(stdout, "tgetting\n");
+                    fprintf(stdout, "[Client] tgetting\n");
                     //file request logic
                     
 
@@ -377,7 +378,7 @@ int main(int argc, char *argv[])
 
                             if(fileptr==NULL)
                             {
-                                fprintf(stdout, "Error file not opened\n\n"); 
+                                fprintf(stdout, "[Client] Error file not opened\n\n"); 
 
                             }
                             else
@@ -391,7 +392,7 @@ int main(int argc, char *argv[])
                                 if(strcmp(messageToRecv, "VALID_FILE")==0)
                                 {
 
-                                    fprintf(stdout, "got to file open\n");
+                                    fprintf(stdout, "[Client] got to file open\n");
 
                                     //file exists on other end
                                     error = readMessage(sockfileDesc, messageToRecv);
@@ -406,9 +407,9 @@ int main(int argc, char *argv[])
 
                                     bufferSendCount = atoi(token);
 
-                                    fprintf(stdout, "File valid\n");
+                                    fprintf(stdout, "[Client] File valid\n");
 
-                                    fprintf(stdout, "Size of it: Buffers->%d, last buffer->%d\n", bufferSendCount, lastBuf);
+                                    //fprintf(stdout, "[Client] Size of it: Buffers->%d, last buffer->%d\n", bufferSendCount, lastBuf);
 
                                     sendAck(sockfileDesc);
 
@@ -419,11 +420,11 @@ int main(int argc, char *argv[])
                                                     
                                                     fwrite(messageToRecv, sizeof(char), STR_MAX_LEN, fileptr);
                                                     sendAck(sockfileDesc);
-                                                        //fprintf(stdout, "Line recieved\n");
+                                                        //fprintf(stdout, "[Client] Line recieved\n");
 
                                                     if(error==-1)
                                                     {
-                                                        fprintf(stdout, "Error in process file contents incorrect\n");
+                                                        fprintf(stdout, "[Client] Error in process file contents incorrect\n");
                                                         break;
                                                     }
                                                 }
@@ -456,12 +457,12 @@ int main(int argc, char *argv[])
 
                                                 if(error==0)
                                                 {
-                                                    fprintf(stdout, "Transferred succesfully please input a new command\n");
+                                                    fprintf(stdout, "[Client] Transferred succesfully please input a new command\n");
 
                                                 }
                                                 else
                                                 {
-                                                    fprintf(stdout, "Error occoured during transmission, no acknowledgment recieved.\n");
+                                                    fprintf(stdout, "[Client] Error occoured during transmission, no acknowledgment recieved.\n");
                                                 }
 
                                 }
@@ -469,7 +470,7 @@ int main(int argc, char *argv[])
                                 {
                                     //not valid
                                     sendAck(sockfileDesc);
-                                     fprintf(stdout, "Error occoured during transmission, no file to get on server.\n");
+                                     fprintf(stdout, "[Client] Error occoured during transmission, no file to get on server.\n");
                                               
 
                                 }
@@ -483,7 +484,7 @@ int main(int argc, char *argv[])
                 }
                 else
                 {
-                    fprintf(stdout, "connect first\n");
+                    fprintf(stdout, "[Client] connect first\n");
                 } 
         }
         else if (strcmp( "tput", currTok->inArg[0]) ==0)
@@ -501,11 +502,11 @@ int main(int argc, char *argv[])
                 if(tconnect)
                 {
                     // do something
-                    fprintf(stdout, "tputting\n");
+                    fprintf(stdout, "[Client] tputting\n");
                     fileptr = fopen(currTok->inArg[1], "rb");
                     if(fileptr==NULL)
                     {
-                        fprintf(stdout, "Error file not sent\n\n"); 
+                        fprintf(stdout, "[Client] Error file not sent\n\n"); 
 
                     }
                     else
@@ -533,7 +534,7 @@ int main(int argc, char *argv[])
                         {                           
                            error = fread(messageToSend,sizeof(char),STR_MAX_LEN,fileptr);
                            if(error==0)
-                           {    fprintf(stdout, "ERROR\n"); }
+                           {    fprintf(stdout, "[Client] ERROR\n"); }
                            else
                            {
                                 sendMessage(sockfileDesc, messageToSend);
@@ -541,8 +542,8 @@ int main(int argc, char *argv[])
                            error = waitAck(sockfileDesc);
                            if(error==-1)
                            {
-                            fprintf(stdout, "ERROR\n");
-                            fprintf(stdout, "timeout error occoured\n");
+                            fprintf(stdout, "[Client] ERROR\n");
+                            fprintf(stdout, "[Client] timeout error occoured\n");
                             break;
                             
                            }
@@ -553,7 +554,7 @@ int main(int argc, char *argv[])
                                error = fread(messageToSend,sizeof(char),cur,fileptr);
                                if(error==0)
                                {
-                                fprintf(stdout, "ERROR\n");
+                                fprintf(stdout, "[Client] ERROR\n");
                                }
                                else
                                {
@@ -565,19 +566,19 @@ int main(int argc, char *argv[])
                         //check closing
                         if (strcmp( "all_done", messageToRecv) ==0 )
                         {
-                            fprintf(stdout, "Transferred succesfully please input a new command\n");
+                            fprintf(stdout, "[Client] Transferred succesfully please input a new command\n");
 
                         }
                         else
                         {
-                            fprintf(stdout, "Error occoured during transmission, no acknowledgment recieved.\n");
+                            fprintf(stdout, "[Client] Error occoured during transmission, no acknowledgment recieved.\n");
                         }
                     }
 
                 }
                 else
                 {
-                    fprintf(stdout, "Err: Must connect to server first\n");
+                    fprintf(stdout, "[Client] Err: Must connect to server first\n");
                 }
                 
         }
@@ -594,25 +595,25 @@ int main(int argc, char *argv[])
                     
                     shutdown(sockfileDesc,SHUT_RDWR);
                     close(sockfileDesc);
-                    fprintf(stdout, "Client closing closing connection\n");
+                    fprintf(stdout, "[Client] Client closing closing connection\n");
 
 
                 }
                 else
                 {
-                    fprintf(stdout, "Err nothing to close\n");
+                    fprintf(stdout, "[Client] Err nothing to close\n");
 
                 }
                 
         }
         else
         {
-            fprintf(stdout, "Err: INPUT NOT RECOGNIZED, try again\n");
+            fprintf(stdout, "[Client] Err: INPUT NOT RECOGNIZED, try again\n");
         }
 
         memset(inbuff, 0, STR_MAX_LEN);
 
-        fprintf(stdout, "Please input a command:\n");
+        fprintf(stdout, "[Client] Please input a command:\n>>> ");
 
     }
 
@@ -620,14 +621,14 @@ int main(int argc, char *argv[])
     if(tconnect)
     {
 
-        fprintf(stdout,"Buggy closing! shutdown oocured while connected to server still! Did not hit exit point\n\n");
+        fprintf(stdout, "[Client] Buggy closing! shutdown oocured while connected to server still! Did not hit exit point\n\n");
 
 
     }
     else
     {
 
-        fprintf(stdout,"Exiting safely. Everything shut down\n\n");
+        fprintf(stdout, "[Client] Exiting safely. Everything shut down\n\n");
 
 
     }
